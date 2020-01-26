@@ -2,8 +2,6 @@
 #include "GameTypes.h";
 
 namespace PipeFlood {
-  const enum side { left = 0, right = 1, top = 2, bottom = 3 };
-
   // Each vector defines the each side of the square 
   // in the order given by the enum "side". Only 3 bits for each side is needed,
   // so this declaration could be more compact, but meh.
@@ -95,9 +93,20 @@ namespace PipeFlood {
         throw;
       }
       tex.setSmooth(true);
-      std::cout << tex.getSize().x << ", " << tex.getSize().y << std::endl;
       sprite.setTexture(tex);
       sprite.setScale(sf::Vector2f(scale, scale));
+    }
+
+    Sprite createSprite(v2 pos, v2 size, uint16_t rotation) {
+      Sprite sprite;
+
+      sprite.setTexture(tex);
+      float pixelX = pos.x * size.x, pixelY = pos.y * size.y;
+      sprite.setPosition(sf::Vector2f(pixelX + size.x / 2, pixelY + size.y / 2));
+      sprite.setOrigin(sf::Vector2f(size.x / 2, size.y / 2));
+      sprite.setRotation(rotation * 90.0f);
+
+      return sprite;
     }
   };
 
@@ -110,28 +119,24 @@ namespace PipeFlood {
 
     uint16_t** field;
     uint16_t** rotation;
+    Sprite** spriteField;
 
     const uint16_t tileSet = 5;
     const std::vector<std::string> vPipeFiles{/*"cross5.png",*/ "i", "t", "edge" };
 
-    Tile selector;
     std::vector<PipeFlood::Tile> vTiles;
     std::vector<PipeFlood::Tile> vWaterTiles;
 
-    Map(v2 size) :
-      // Doesn't initialize
-      // field{ std::vector<std::vector<uint16_t>>{ sizeX } },
-      // rotation{ std::vector<std::vector<uint16_t>>{ sizeX } },
-      size{ size },
-      selector{ PipeFlood::Tile("selector.png") } {
+    Map(v2 size) : size{ size } {
       field = new uint16_t*[size.x];
       rotation = new uint16_t*[size.x];
+      spriteField = new Sprite*[size.x];
+
       for (uint16_t x = 0; x < size.x; x++) {
         field[x] = new uint16_t[size.y];
         rotation[x] = new uint16_t[size.y];
+        spriteField[x] = new Sprite[size.y];
       }
-      std::cout << "size: " << size.x << ", " << size.y << std::endl;
-      //std::cout << "vector:" << field.size() << ", " << field[0].size() << std::endl;
 
       this->tileResized = v2{ static_cast<uint16_t>(tileSize * tileScale), static_cast<uint16_t>(tileSize * tileScale) };
       this->resolution = v2{ static_cast<uint16_t>(tileResized.x * size.x), static_cast<uint16_t>(tileResized.y * size.y) };
@@ -144,8 +149,8 @@ namespace PipeFlood {
       for (uint16_t x = 0; x < size.x; x++) {
         for (uint16_t y = 0; y < size.y; y++) {
           field[x][y] = PipeFlood::rnd(0, vPipeFiles.size() - 1);
-          // {0,1,2,3} * 90°
           rotation[x][y] = PipeFlood::rnd(0, 3);
+          //spriteField[x][y] = (doesJoin(x, y) ? vWaterTiles[field[x][y]] : vTiles[field[x][y]]).createSprite(v2{ x, y }, tileResized, rotation[x][y]);
           std::cout << field[x][y] << "(" << rotation[x][y] << ") ";
         }
         std::cout << std::endl;
@@ -155,6 +160,7 @@ namespace PipeFlood {
     ~Map() {
       delete[] field;
       delete[] rotation;
+      delete[] spriteField;
     }
 
     /**
@@ -162,39 +168,39 @@ namespace PipeFlood {
      **/
     bool doesJoin(uint16_t x, uint16_t y) {
       const auto& sides = PipeFlood::vBoolMask[field[x][y]][rotation[x][y]];
-      const auto& top = sides[PipeFlood::side::top];
-      const auto& bottom = sides[PipeFlood::side::bottom];
-      const auto& left = sides[PipeFlood::side::left];
-      const auto& right = sides[PipeFlood::side::right];
+      const auto& top = sides[PipeFlood::Side::top];
+      const auto& bottom = sides[PipeFlood::Side::bottom];
+      const auto& left = sides[PipeFlood::Side::left];
+      const auto& right = sides[PipeFlood::Side::right];
 
       const bool leftMatch = (x > 0)
         && left
-        && PipeFlood::vBoolMask[field[x - 1][y]][rotation[x - 1][y]][PipeFlood::side::right];
+        && PipeFlood::vBoolMask[field[x - 1][y]][rotation[x - 1][y]][PipeFlood::Side::right];
 
       const bool rightMatch = (x < (size.x - 1))
         && right
-        && PipeFlood::vBoolMask[field[x + 1][y]][rotation[x + 1][y]][PipeFlood::side::left];
+        && PipeFlood::vBoolMask[field[x + 1][y]][rotation[x + 1][y]][PipeFlood::Side::left];
 
       const bool topMatch = (y > 0)
         && top
-        && PipeFlood::vBoolMask[field[x][y - 1]][rotation[x][y - 1]][PipeFlood::side::bottom];
+        && PipeFlood::vBoolMask[field[x][y - 1]][rotation[x][y - 1]][PipeFlood::Side::bottom];
 
       const bool bottomMatch = (y < size.y - 1)
         && bottom
-        && PipeFlood::vBoolMask[field[x][y + 1]][rotation[x][y + 1]][PipeFlood::side::top];
+        && PipeFlood::vBoolMask[field[x][y + 1]][rotation[x][y + 1]][PipeFlood::Side::top];
 
       return rightMatch || leftMatch || topMatch || bottomMatch;
     }
 
-    Sprite tile(v2 pos) {
-      Sprite sprite = doesJoin(pos.x, pos.y) ? vWaterTiles[field[pos.x][pos.y]].sprite : vTiles[field[pos.x][pos.y]].sprite;
-      
-      float pixelX = pos.x * tileResized.x, pixelY = pos.y * tileResized.y;
-      sprite.setPosition(sf::Vector2f(pixelX + tileResized.x / 2, pixelY + tileResized.y / 2));
-      sprite.setOrigin(sf::Vector2f(tileResized.x / 2, tileResized.y / 2));
-      sprite.setRotation(rotation[pos.x][pos.y] * 90.0f);
-      
-      return sprite;
+    Tex* getTex(v2 pos) {
+      return doesJoin(pos.x, pos.y) ? &vWaterTiles[field[pos.x][pos.y]].tex : &vTiles[field[pos.x][pos.y]].tex;
+    }
+
+    Sprite getSprite(v2 pos) {
+      return (doesJoin(pos.x, pos.y)
+        ? vWaterTiles[field[pos.x][pos.y]]
+        : vTiles[field[pos.x][pos.y]])
+          .createSprite(pos, tileResized, rotation[pos.x][pos.y]);
     }
   };
 }

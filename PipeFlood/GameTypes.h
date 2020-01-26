@@ -13,10 +13,13 @@ namespace PipeFlood {
   };
 
   typedef sf::Sprite Sprite;
+  typedef sf::Texture Tex;
 
   struct InputInfo {
     mutable bool mouseDown = false;
     mutable bool keyDown = false;
   };
+
+  const enum Side { left = 0, right = 1, top = 2, bottom = 3 };
 
 }
