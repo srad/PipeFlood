@@ -9,8 +9,9 @@ namespace PipeFlood {
     uint16_t fps;
     bool vSync;
   };
-
-  struct Engine {
+  
+  class Engine {
+  public:
     Game game{ v2{15, 12} };
     InputInfo inputInfo;
     sf::RenderWindow window{ sf::VideoMode(game.resolution.x, game.resolution.y), "PipeFlood" };
@@ -19,12 +20,13 @@ namespace PipeFlood {
       Engine(EngineConfig{ 30, false });
     }
 
-    Engine(EngineConfig config) {
+    Engine(const EngineConfig config) {
       window.setFramerateLimit(config.fps);
       window.setVerticalSyncEnabled(config.vSync);
     }
 
     void start() {
+      game.create(&window);
       while (window.isOpen()) {
         sf::Event event;
         bool action;
@@ -33,6 +35,7 @@ namespace PipeFlood {
           // EVENT
           action = true;
           switch (event.type) {
+          case sf::Event::Resized: game.resize(&window); break;
           case sf::Event::Closed: window.close(); break;
           case sf::Event::KeyReleased: inputInfo.keyDown = false; break;
           case sf::Event::MouseButtonPressed: action = true; break;

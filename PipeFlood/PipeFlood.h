@@ -1,206 +1,218 @@
 #pragma once
 #include "GameTypes.h";
+#include  "Pipes.h";
+#include "Math.h";
+#include "Tile.h";
+#include <unordered_set>
+#include <queue>
+#include <unordered_map>
+#define DEBUG
 
 namespace PipeFlood {
-  // Each vector defines the each side of the square 
-  // in the order given by the enum "side". Only 3 bits for each side is needed,
-  // so this declaration could be more compact, but meh.
-
-  const bool pipe = true;
-  const bool none = false;
-
-  const std::vector<std::vector<std::vector<bool>>> vBoolMask
-  {
-    // From left to right each element with a rotation clockwise each step by pi/2
-
-    // +---+---+---+
-    // |   | X |   |
-    // +---+---+---+
-    // | X | X | X |
-    // +---+---+---+
-    // |   | X |   |
-    // +---+---+---+
-    /*
-    std::vector<std::vector<bool>>
-    {
-      {pipe, pipe, pipe, pipe },
-      {pipe, pipe, pipe, pipe },
-      {pipe, pipe, pipe, pipe },
-      {pipe, pipe, pipe, pipe }
-    },
-    */
-    // +---+---+---+ +---+---+---+
-    // |   | X |   | |   |   |   |
-    // +---+---+---+ +---+---+---+
-    // |   | X |   | | X | X | X |
-    // +---+---+---+ +---+---+---+
-    // |   | X |   | |   |   |   |
-    // +---+---+---+ +---+---+---+
-    std::vector<std::vector<bool>>
-    {
-      {none, none, pipe, pipe },
-      {pipe, pipe, none, none },
-      {none, none, pipe, pipe },
-      {pipe, pipe, none, none }
-    },
-
-    // +---+---+---+ +---+---+---+ +---+---+---+ +---+---+---+
-    // |   |   |   | |   | X |   | |   | X |   | |   | X |   |
-    // +---+---+---+ +---+---+---+ +---+---+---+ +---+---+---+
-    // | X | X | X | | X | X |   | | X | X | X | |   | X | X |
-    // +---+---+---+ +---+---+---+ +---+---+---+ +---+---+---+
-    // |   | X |   | |   | X |   | |   |   |   | |   | X |   |
-    // +---+---+---+ +---+---+---+ +---+---+---+ +---+---+---+
-    std::vector<std::vector<bool>>
-    {
-      { pipe, pipe, none, pipe },
-      { pipe, none, pipe, pipe },
-      { pipe, pipe, pipe, none },
-      { none, pipe, pipe, pipe },
-    },
-
-        // +---+---+---+ +---+---+---+ +---+---+---+ +---+---+---+
-        // |   |   |   | |   |   |   | |   | X |   | |   | X |   |
-        // +---+---+---+ +---+---+---+ +---+---+---+ +---+---+---+
-        // |   | X | X | | X | X |   | | X | X |   | |   | X | X |
-        // +---+---+---+ +---+---+---+ +---+---+---+ +---+---+---+
-        // |   | X |   | |   | X |   | |   |   |   | |   |   |   |
-        // +---+---+---+ +---+---+---+ +---+---+---+ +---+---+---+
-        std::vector<std::vector<bool>>
-        {
-          { none, pipe, none, pipe },
-          { pipe, none, none, pipe },
-          { pipe, none, pipe, none },
-          { none, pipe, pipe, none },
-        }
-  };
-
-  inline uint16_t rnd(uint16_t min, uint16_t max) {
-    return rand() % (max - min + 1) + min;
-  }
-
-  struct Tile {
-    const uint16_t tileSize = 64;
-    std::string filename;
-    sf::Sprite sprite;
-    sf::Texture tex;
-    const float scale = 1.0f;
-    const std::string path = "C:/Users/saman/src/PipeFlood/PipeFlood/assets/textures/";
-
-    Tile(const std::string filename) {
-      this->filename = filename;
-      if (!tex.loadFromFile(path + filename)) {
-        throw;
-      }
-      tex.setSmooth(true);
-      sprite.setTexture(tex);
-      sprite.setScale(sf::Vector2f(scale, scale));
-    }
-
-    Sprite createSprite(v2 pos, v2 size, uint16_t rotation) {
-      Sprite sprite;
-
-      sprite.setTexture(tex);
-      float pixelX = pos.x * size.x, pixelY = pos.y * size.y;
-      sprite.setPosition(sf::Vector2f(pixelX + size.x / 2, pixelY + size.y / 2));
-      sprite.setOrigin(sf::Vector2f(size.x / 2, size.y / 2));
-      sprite.setRotation(rotation * 90.0f);
-
-      return sprite;
-    }
+  struct PathInfo {
+    std::vector<v2> path;
+    std::unordered_map<std::string, bool>  visited;
+    std::unordered_map<std::string, v2> parent;
   };
 
   struct Map {
     v2 size, tileResized;
     v2 resolution;
+    v2 target;
 
     const float tileScale = 1.0f;
     const uint16_t tileSize = 64;
+    std::unordered_map<std::string, v2> water;
 
     uint16_t** field;
     uint16_t** rotation;
-    Sprite** spriteField;
+    bool** joined;
 
-    const uint16_t tileSet = 5;
-    const std::vector<std::string> vPipeFiles{/*"cross5.png",*/ "i", "t", "edge" };
+    std::vector<PipeFlood::Tiles::Tile> vTiles;
+    std::vector<PipeFlood::Tiles::Tile> vWaterTiles;
 
-    std::vector<PipeFlood::Tile> vTiles;
-    std::vector<PipeFlood::Tile> vWaterTiles;
-
-    Map(v2 size) : size{ size } {
-      field = new uint16_t*[size.x];
-      rotation = new uint16_t*[size.x];
-      spriteField = new Sprite*[size.x];
+    Map(v2 size) : size{ size }, target{ (uint16_t)(size.x - 1), (uint16_t)(size.y - 1) } {
+      field = new uint16_t * [size.x];
+      rotation = new uint16_t * [size.x];
+      joined = new bool* [size.x];
 
       for (uint16_t x = 0; x < size.x; x++) {
         field[x] = new uint16_t[size.y];
         rotation[x] = new uint16_t[size.y];
-        spriteField[x] = new Sprite[size.y];
+        joined[x] = new bool[size.y];
       }
 
       this->tileResized = v2{ static_cast<uint16_t>(tileSize * tileScale), static_cast<uint16_t>(tileSize * tileScale) };
-      this->resolution = v2{ static_cast<uint16_t>(tileResized.x * size.x), static_cast<uint16_t>(tileResized.y * size.y) };
+      this->resolution = v2{ static_cast<uint16_t>(tileResized.x* size.x), static_cast<uint16_t>(tileResized.y* size.y) };
 
-      for (auto file : vPipeFiles) {
-        vTiles.push_back(PipeFlood::Tile(file + std::to_string(tileSet) + ".png"));
-        vWaterTiles.push_back(PipeFlood::Tile(file + std::to_string(tileSet) + "_water.png"));
+      // Load textures
+      for (const auto& tile : Tiles::vPipeFiles) {
+        vTiles.push_back(Tiles::Tile(tile.filename + std::to_string(Tiles::tilePack) + ".png", tile.type));
+        vWaterTiles.push_back(Tiles::Tile(tile.filename + std::to_string(Tiles::tilePack) + "_water.png", tile.type));
       }
 
+      // Random map
       for (uint16_t x = 0; x < size.x; x++) {
         for (uint16_t y = 0; y < size.y; y++) {
-          field[x][y] = PipeFlood::rnd(0, vPipeFiles.size() - 1);
-          rotation[x][y] = PipeFlood::rnd(0, 3);
-          //spriteField[x][y] = (doesJoin(x, y) ? vWaterTiles[field[x][y]] : vTiles[field[x][y]]).createSprite(v2{ x, y }, tileResized, rotation[x][y]);
+          // Input
+          if (x == 0 && y == 0) { field[x][y] = 0; }
+          // Output
+          else if ((x == (size.x - 1)) && (y == (size.y - 1))) { field[x][y] = 1; }
+          else { field[x][y] = PipeFlood::Math::rnd(2, Tiles::vPipeFiles.size() - 1); }
+          rotation[x][y] = PipeFlood::Math::rnd(0, 3);
+#ifdef DEBUG
           std::cout << field[x][y] << "(" << rotation[x][y] << ") ";
+#endif
         }
+#ifdef DEBUG
         std::cout << std::endl;
+#endif
       }
+
+      checkJoins();
     }
 
     ~Map() {
       delete[] field;
       delete[] rotation;
-      delete[] spriteField;
+      delete[] joined;
     }
 
-    /**
+    void checkJoins() {
+      for (uint16_t x = 0; x < size.x; x++) {
+        for (uint16_t y = 0; y < size.y; y++) {
+          joined[x][y] = doesJoin(v2{ x,y });
+        }
+      }
+    }
+
+    /*
      * Find out if this pipe connects to any adjacent pipe opening.
-     **/
-    bool doesJoin(uint16_t x, uint16_t y) {
-      const auto& sides = PipeFlood::vBoolMask[field[x][y]][rotation[x][y]];
-      const auto& top = sides[PipeFlood::Side::top];
-      const auto& bottom = sides[PipeFlood::Side::bottom];
+     */
+    bool doesJoin(const v2 pos) {
+      const auto& sides = PipeFlood::Pipes::vPipeMask[field[pos.x][pos.y]][rotation[pos.x][pos.y]];
+      return rightJoin(sides, pos) || leftJoin(sides, pos) || topJoin(sides, pos) || bottomJoin(sides, pos);
+    }
+
+    bool leftJoin(const std::vector<bool>& sides, v2 pos) {
       const auto& left = sides[PipeFlood::Side::left];
+
+      return (pos.x > 0)
+        && left
+        && PipeFlood::Pipes::vPipeMask[field[pos.x - 1][pos.y]][rotation[pos.x - 1][pos.y]][PipeFlood::Side::right];
+    }
+    
+    bool rightJoin(const std::vector<bool>& sides, v2 pos) {
       const auto& right = sides[PipeFlood::Side::right];
 
-      const bool leftMatch = (x > 0)
-        && left
-        && PipeFlood::vBoolMask[field[x - 1][y]][rotation[x - 1][y]][PipeFlood::Side::right];
-
-      const bool rightMatch = (x < (size.x - 1))
+      return (pos.x < (size.x - 1))
         && right
-        && PipeFlood::vBoolMask[field[x + 1][y]][rotation[x + 1][y]][PipeFlood::Side::left];
+        && PipeFlood::Pipes::vPipeMask[field[pos.x + 1][pos.y]][rotation[pos.x + 1][pos.y]][PipeFlood::Side::left];
+    }
 
-      const bool topMatch = (y > 0)
+    bool topJoin(const std::vector<bool>& sides, v2 pos) {
+      const auto& top = sides[PipeFlood::Side::top];
+
+      return (pos.y > 0)
         && top
-        && PipeFlood::vBoolMask[field[x][y - 1]][rotation[x][y - 1]][PipeFlood::Side::bottom];
+        && PipeFlood::Pipes::vPipeMask[field[pos.x][pos.y - 1]][rotation[pos.x][pos.y - 1]][PipeFlood::Side::bottom];
+    }
 
-      const bool bottomMatch = (y < size.y - 1)
+    bool bottomJoin(const std::vector<bool>& sides, v2 pos) {
+      const auto& bottom = sides[PipeFlood::Side::bottom];
+
+      return (pos.y < size.y - 1)
         && bottom
-        && PipeFlood::vBoolMask[field[x][y + 1]][rotation[x][y + 1]][PipeFlood::Side::top];
-
-      return rightMatch || leftMatch || topMatch || bottomMatch;
+        && PipeFlood::Pipes::vPipeMask[field[pos.x][pos.y + 1]][rotation[pos.x][pos.y + 1]][PipeFlood::Side::top];
     }
 
+    void printJoins() {
+      for (uint16_t y = 0; y < size.y; y++) {
+        for (uint16_t x = 0; x < size.x; x++) {
+          std::cout << joined[x][y] << " ";
+        }
+        std::cout << std::endl;
+      }
+    }
+
+    /*
     Tex* getTex(v2 pos) {
-      return doesJoin(pos.x, pos.y) ? &vWaterTiles[field[pos.x][pos.y]].tex : &vTiles[field[pos.x][pos.y]].tex;
+      return doesJoin(pos) ? &vWaterTiles[field[pos.x][pos.y]].tex : &vTiles[field[pos.x][pos.y]].tex;
+    }
+    */
+
+    float darkenColor = 0.6f;
+
+    Sprite getSprite(v2 pos, bool waterSprite = false) {
+      auto s = (waterSprite ? vWaterTiles[field[pos.x][pos.y]] : vTiles[field[pos.x][pos.y]]).createSprite(pos, tileResized, rotation[pos.x][pos.y]);
+      if (!joined[pos.x][pos.y] && !waterSprite) {
+        auto col = s.getColor();
+        s.setColor(sf::Color{ (sf::Uint8)(col.r * darkenColor), (sf::Uint8)(col.g * darkenColor), (sf::Uint8)(col.b * darkenColor) });
+      }
+      return s;
+      //return (joined[pos.x][pos.y]
+      //  ? vWaterTiles[field[pos.x][pos.y]]
+      //  : vTiles[field[pos.x][pos.y]])
+      //  .createSprite(pos, tileResized, rotation[pos.x][pos.y]);
     }
 
-    Sprite getSprite(v2 pos) {
-      return (doesJoin(pos.x, pos.y)
-        ? vWaterTiles[field[pos.x][pos.y]]
-        : vTiles[field[pos.x][pos.y]])
-          .createSprite(pos, tileResized, rotation[pos.x][pos.y]);
+    PathInfo BFS(v2 start, v2 goal) {
+      auto pathInfo = PathInfo{};
+      std::queue<v2> queue{};
+      auto path = BFS(start, goal, queue, pathInfo);
+
+      return pathInfo;
+    }
+
+    PathInfo BFS(v2 start, v2 goal, std::queue<v2> queue, PathInfo& pathInfo) {
+      queue.push(start);
+
+      while (!queue.empty()) {
+        auto v = queue.front();
+        queue.pop();
+
+        if (v.str() == goal.str()) {
+          return pathInfo;
+        }
+
+        // Does this pipe connect to any other?
+        bool joins = joined[v.x][v.y];
+
+        // insert all adjacent points
+        if (joins) {
+          const auto& sides = PipeFlood::Pipes::vPipeMask[field[v.x][v.y]][rotation[v.x][v.y]];
+          auto left = v2{ (uint16_t)(v.x - 1), v.y };
+          auto right = v2{ (uint16_t)(v.x + 1), v.y };
+          auto top = v2{ v.x, (uint16_t)(v.y - 1) };
+          auto bottom = v2{ v.x, (uint16_t)(v.y + 1) };
+
+          if (!pathInfo.visited[left.str()] && leftJoin(sides, v)) {
+            pathInfo.visited[left.str()] = true;
+            queue.push(left);
+            pathInfo.parent[left.str()] = v;
+          }
+
+          if (!pathInfo.visited[right.str()] && rightJoin(sides, v)) {
+            pathInfo.visited[right.str()] = true;
+            queue.push(right);
+            pathInfo.parent[right.str()] = v;
+          }
+
+          if (!pathInfo.visited[top.str()] && topJoin(sides, v)) {
+            pathInfo.visited[top.str()] = true;
+            queue.push(top);
+            pathInfo.parent[top.str()] = v;
+          }
+
+          if (!pathInfo.visited[bottom.str()] && bottomJoin(sides, v)) {
+            pathInfo.visited[bottom.str()] = true;
+            queue.push(bottom);
+            pathInfo.parent[bottom.str()] = v;
+          }
+        }
+      }
+
+      return pathInfo;
     }
   };
 }
