@@ -22,7 +22,6 @@ namespace PipeFlood {
 
     
     struct Tile {
-
       TileType type;
       const uint16_t tileSize = 64;
       std::string filename;
@@ -39,7 +38,13 @@ namespace PipeFlood {
         if (!tex.loadFromFile(path + filename)) { throw; }
         tex.setSmooth(true);
         sprite.setTexture(tex);
-        sprite.setScale(sf::Vector2f(scale, scale));
+      }
+
+      Sprite createSprite() {
+        Sprite sprite;
+        sprite.setTexture(tex);
+        sprite.setPosition(sf::Vector2f(0, 0));
+        return sprite;
       }
 
       Sprite createSprite(v2 pos, v2 size, uint16_t rotation) {
@@ -50,6 +55,7 @@ namespace PipeFlood {
         sprite.setPosition(sf::Vector2f(pixelX + size.x / 2, pixelY + size.y / 2));
         sprite.setOrigin(sf::Vector2f(size.x / 2, size.y / 2));
         sprite.setRotation(rotation * 90.0f);
+        sprite.setScale(sf::Vector2f(scale, scale));
 
         return sprite;
       }

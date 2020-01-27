@@ -6,6 +6,9 @@
 * The assets are not included.
 
 # Demo
+
+![](https://raw.githubusercontent.com/srad/PipeFlood/master/Doc/media/splash.jpg)
+
 ![](https://raw.githubusercontent.com/srad/PipeFlood/master/Doc/media/demo1.jpg)
 
 # License
