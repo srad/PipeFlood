@@ -1,7 +1,7 @@
-#include "Game.h";
+#include "Game.h"
 
 int main() {
-  PipeFlood::Game engine;
-  engine.start();
+  PipeFlood::Game game;
+  game.start();
   return 0;
 }

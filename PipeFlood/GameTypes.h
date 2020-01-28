@@ -1,4 +1,7 @@
 #pragma once
+#include <cstdint>
+#include <string>
+#include <SFML\Graphics\Sprite.hpp>
 
 namespace PipeFlood {
   
@@ -20,6 +23,5 @@ namespace PipeFlood {
     mutable bool keyDown = false;
   };
 
-  const enum Side { left = 0, right = 1, top = 2, bottom = 3 };
-
+  struct Side { static const uint16_t left = 0, right = 1, top = 2, bottom = 3; };
 }

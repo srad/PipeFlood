@@ -1,12 +1,11 @@
 #pragma once
-#include "GameTypes.h";
-#include  "Pipes.h";
-#include "Math.h";
-#include "Tile.h";
-#include <unordered_set>
+#include "GameTypes.h"
+#include  "Pipes.h"
+#include "Math.h"
+#include "Tile.h"
+#include "TilePack.h"
 #include <queue>
 #include <unordered_map>
-#define DEBUG
 
 namespace PipeFlood {
   struct PathInfo {
@@ -19,7 +18,8 @@ namespace PipeFlood {
     v2 size, tileResized;
     v2 resolution;
     v2 target;
-
+    uint16_t margin;
+    
     const float tileScale = 1.0f;
     const uint16_t tileSize = 64;
     std::unordered_map<std::string, v2> water;
@@ -28,8 +28,7 @@ namespace PipeFlood {
     uint16_t** rotation;
     bool** joined;
 
-    std::vector<Tile> vTiles;
-    std::vector<Tile> vWaterTiles;
+    JoinsPack joinsPack{ 2 };
 
     Map(v2 size) : size{ size }, target{ (uint16_t)(size.x - 1), (uint16_t)(size.y - 1) } {
       field = new uint16_t * [size.x];
@@ -45,12 +44,6 @@ namespace PipeFlood {
       this->tileResized = v2{ static_cast<uint16_t>(tileSize * tileScale), static_cast<uint16_t>(tileSize * tileScale) };
       this->resolution = v2{ static_cast<uint16_t>(tileResized.x* size.x), static_cast<uint16_t>(tileResized.y* size.y) };
 
-      // Load textures
-      for (const auto& tile : vPipeFiles) {
-        vTiles.push_back(Tile("pipes/" + std::to_string(tilePack) + "/" + tile.filename + ".png", tile.type));
-        vWaterTiles.push_back(Tile("pipes/" + std::to_string(tilePack) + "/water/" + tile.filename + ".png", tile.type));
-      }
-
       // Random map
       for (uint16_t x = 0; x < size.x; x++) {
         for (uint16_t y = 0; y < size.y; y++) {
@@ -58,8 +51,8 @@ namespace PipeFlood {
           if (x == 0 && y == 0) { field[x][y] = 0; }
           // Output
           else if ((x == (size.x - 1)) && (y == (size.y - 1))) { field[x][y] = 1; }
-          else { field[x][y] = PipeFlood::Math::rnd(2, vPipeFiles.size() - 1); }
-          rotation[x][y] = PipeFlood::Math::rnd(0, 3);
+          else { field[x][y] = Math::rnd(2, vPipeFiles.size() - 1); }
+          rotation[x][y] = Math::rnd(0, 3);
 #ifdef DEBUG
           std::cout << field[x][y] << "(" << rotation[x][y] << ") ";
 #endif
@@ -90,60 +83,77 @@ namespace PipeFlood {
      * Find out if this pipe connects to any adjacent pipe opening.
      */
     bool doesJoin(const v2 pos) {
-      const auto& sides = PipeFlood::Pipes::vPipeMask[field[pos.x][pos.y]][rotation[pos.x][pos.y]];
+      const auto& sides = Pipes::vPipeMask[field[pos.x][pos.y]][rotation[pos.x][pos.y]];
       return rightJoin(sides, pos) || leftJoin(sides, pos) || topJoin(sides, pos) || bottomJoin(sides, pos);
     }
 
     bool leftJoin(const std::vector<bool>& sides, v2 pos) {
-      const auto& left = sides[PipeFlood::Side::left];
+      const auto& left = sides[Side::left];
 
       return (pos.x > 0)
         && left
-        && PipeFlood::Pipes::vPipeMask[field[pos.x - 1][pos.y]][rotation[pos.x - 1][pos.y]][PipeFlood::Side::right];
+        && Pipes::vPipeMask[field[pos.x - 1][pos.y]][rotation[pos.x - 1][pos.y]][Side::right];
     }
     
     bool rightJoin(const std::vector<bool>& sides, v2 pos) {
-      const auto& right = sides[PipeFlood::Side::right];
+      const auto& right = sides[Side::right];
 
       return (pos.x < (size.x - 1))
         && right
-        && PipeFlood::Pipes::vPipeMask[field[pos.x + 1][pos.y]][rotation[pos.x + 1][pos.y]][PipeFlood::Side::left];
+        && Pipes::vPipeMask[field[pos.x + 1][pos.y]][rotation[pos.x + 1][pos.y]][Side::left];
     }
 
     bool topJoin(const std::vector<bool>& sides, v2 pos) {
-      const auto& top = sides[PipeFlood::Side::top];
+      const auto& top = sides[Side::top];
 
       return (pos.y > 0)
         && top
-        && PipeFlood::Pipes::vPipeMask[field[pos.x][pos.y - 1]][rotation[pos.x][pos.y - 1]][PipeFlood::Side::bottom];
+        && Pipes::vPipeMask[field[pos.x][pos.y - 1]][rotation[pos.x][pos.y - 1]][Side::bottom];
     }
 
     bool bottomJoin(const std::vector<bool>& sides, v2 pos) {
-      const auto& bottom = sides[PipeFlood::Side::bottom];
+      const auto& bottom = sides[Side::bottom];
 
       return (pos.y < size.y - 1)
         && bottom
-        && PipeFlood::Pipes::vPipeMask[field[pos.x][pos.y + 1]][rotation[pos.x][pos.y + 1]][PipeFlood::Side::top];
+        && Pipes::vPipeMask[field[pos.x][pos.y + 1]][rotation[pos.x][pos.y + 1]][Side::top];
     }
 
     void printJoins() {
+#ifdef DEBUG
       for (uint16_t y = 0; y < size.y; y++) {
         for (uint16_t x = 0; x < size.x; x++) {
           std::cout << joined[x][y] << " ";
         }
         std::cout << std::endl;
       }
+#endif
     }
 
-    float darkenColor = 0.5f;
+    float darkenColor = 0.7f;
 
-    Sprite getSprite(v2 pos, bool waterSprite = false) {
-      auto s = (waterSprite ? vWaterTiles[field[pos.x][pos.y]] : vTiles[field[pos.x][pos.y]]).createSprite(pos, tileResized, rotation[pos.x][pos.y]);
-      if (!joined[pos.x][pos.y] && !waterSprite) {
-        auto col = s.getColor();
-        s.setColor(sf::Color{ (sf::Uint8)(col.r * darkenColor), (sf::Uint8)(col.g * darkenColor), (sf::Uint8)(col.b * darkenColor) });
+    Sprite getSprite(v2 pos, bool active = false) {
+      Sprite sprite = joinsPack.toSprite(pos, field[pos.x][pos.y], active, rotation[pos.x][pos.y]);
+      if (!joined[pos.x][pos.y] && !active) {
+        auto col = sprite.getColor();
+        sprite.setColor(sf::Color{ (sf::Uint8)(col.r * darkenColor), (sf::Uint8)(col.g * darkenColor), (sf::Uint8)(col.b * darkenColor) });
       }
-      return s;
+      return sprite;
+    }
+
+    std::vector<v2> backTraceFrom(PathInfo& pathInfo, v2 from, v2 to) {
+      std::vector<v2> path;
+      path.push_back(from);
+
+      auto it = pathInfo.parent.find(from.str());
+      path.push_back(it->second);
+      while (it->second.x != to.x && it->second.y != to.y) {
+        it = pathInfo.parent.find(it->second.str());
+        path.push_back(it->second);
+      }
+      path.push_back(to);
+
+      return path;
     }
 
     PathInfo BFS(v2 start, v2 goal) {
@@ -170,7 +180,7 @@ namespace PipeFlood {
 
         // insert all adjacent points
         if (joins) {
-          const auto& sides = PipeFlood::Pipes::vPipeMask[field[v.x][v.y]][rotation[v.x][v.y]];
+          const auto& sides = Pipes::vPipeMask[field[v.x][v.y]][rotation[v.x][v.y]];
           auto left = v2{ (uint16_t)(v.x - 1), v.y };
           auto right = v2{ (uint16_t)(v.x + 1), v.y };
           auto top = v2{ v.x, (uint16_t)(v.y - 1) };

@@ -1,16 +1,19 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include <iostream>;
-#include "PipeFlood.h";
+#include <iostream>
+#include "Map.h"
 #include "Tile.h"
-#include "Screen.h";
+#include "Screen.h"
+#include "TilePack.h"
 
 namespace PipeFlood {
   class GameScreen : public Screen {
   public:
     v2 resolution;
+
     TileMap selector{ "selector.png" };
-    TileMap bg{ "bg0.png" };
+    TilePack tilePack{ 1 };
+
     PipeFlood::PathInfo pathInfo;
     bool won = false;
 
@@ -21,7 +24,6 @@ namespace PipeFlood {
     };
 
     void key(sf::RenderWindow* window, sf::Event* event, PipeFlood::InputInfo* input) {
-      std::cout << "GameScreen::key" << std::endl;
       switch (event->key.code) {
       case sf::Keyboard::Enter: rotate(cursor); break;
       case sf::Keyboard::Right: right(); break;
@@ -37,49 +39,53 @@ namespace PipeFlood {
       cursor.x = pos.x / map.tileResized.x;
       cursor.y = pos.y / map.tileResized.y;
       rotate(cursor);
-      selector.sprite.setPosition(sf::Vector2f(cursor.x * map.tileResized.x, cursor.y * map.tileResized.y));
+      selector.sprite.setPosition(sf::Vector2f( (float)(cursor.x * map.tileResized.x), (float)(cursor.y * map.tileResized.y)));
     }
 
-    void update() {};
+    void update(float delta) {};
     void create(sf::RenderWindow* window) {};
     void resize(sf::RenderWindow* window) {};
 
-    void draw(sf::RenderWindow* window) {
-      window->clear(sf::Color::White);
-
-      for (uint16_t x = 0; x < map.size.x; x++) {
-        for (uint16_t y = 0; y < map.size.y; y++) {
-          window->draw(map.getSprite(v2{ x, y }, pathInfo.visited[v2{ x,y }.str()]));
+    void traverse(std::function<void(uint16_t, uint16_t, uint16_t, uint16_t, float, float)> callback) {
+      for (uint16_t y = 0; y < map.size.y; y++) {
+        for (uint16_t x = 0; x < map.size.x; x++) {
+          float pixelX = x * map.tileSize;
+          float pixelY = y * map.tileSize;
+          callback(x, y, map.size.x - 1, map.size.y - 1, pixelX, pixelY);
         }
       }
+    }
+
+    void draw(sf::RenderWindow* window, float delta) {
+      window->clear(sf::Color::Black);
+
+      traverse([this, window](uint16_t x, uint16_t y, uint16_t lastX, uint16_t lastY, float pixelX, float pixelY) {
+        const sf::Vector2f pos{ pixelX, pixelY };
+        tilePack.bg.sprite.setPosition(sf::Vector2f(pixelX, pixelY));
+        window->draw(tilePack.bg.sprite);
+        window->draw(*tilePack.spriteGrid(x, y, lastX, lastY, pos));
+        window->draw(map.getSprite(v2{ x, y }, pathInfo.visited[v2{ x,y }.str()]));
+      });
+
       window->draw(selector.sprite);
 
-      // Draw path to goal
+      // Back traverse father array to start
       if (won) {
-        auto startField = map.getSprite(v2{ 0,0 });
-        startField.setColor(sf::Color{ 200, 100, 100 });
-        window->draw(startField);
-
-        auto it = pathInfo.parent.find(map.target.str());
-        while (it->second.x != 0 && it->second.y != 0) {
-          auto sprite = map.getSprite(it->second);
+        for (auto& field : backtrace) {
+          auto sprite = map.getSprite(field);
           sprite.setColor(sf::Color{ 200, 100, 100 });
           window->draw(sprite);
-          it = pathInfo.parent.find(it->second.str());
         }
-
-        auto targetField = map.getSprite(map.target);
-        targetField.setColor(sf::Color{ 200, 100, 100 });
-        window->draw(targetField);
-
       }
     }
 
   private:
     Map map;
     v2 cursor = v2{ 0, 0 };
+    std::vector<v2> backtrace;
 
     void rotate(v2 pos) {
+      won = false;
       map.rotation[cursor.x][cursor.y] = (map.rotation[cursor.x][cursor.y] + 1) % 4;
 
 #ifdef DEBUG
@@ -88,12 +94,14 @@ namespace PipeFlood {
 
       map.checkJoins();
 
-#ifdef DEBUG
       map.printJoins();
-#endif
 
+      // Found connection
       pathInfo = map.BFS(v2{ 0,0 }, map.target);
-      won = pathInfo.visited[map.target.str()];
+      if (!won && pathInfo.visited[map.target.str()]) {
+        backtrace = map.backTraceFrom(pathInfo, map.target, v2{ 0, 0 });
+        won = true;
+      }
 
 #ifdef DEBUG
       for (auto& p : pathInfo.path) {

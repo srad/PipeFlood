@@ -1,60 +1,38 @@
 #pragma once
 #include <vector>
 #include <cstdint>
-#include "GameTypes.h";
+#include "GameTypes.h"
+#include <string>
+#include <iostream>
+#include <SFML\System\Vector2.hpp>
 
 namespace PipeFlood {
-  enum TileType { Input, Output, Default };
+  enum TileType { Start = 0, End = 1, I = 2, T = 3, Edge = 4, None = 5, Default = 6 };
   struct TileInfo { std::string filename; TileType type; };
 
   const std::vector<TileInfo> vPipeFiles
   {
     //"cross5.png",
-    TileInfo{"opening", TileType::Input},
-    TileInfo{"opening_out", TileType::Output},
-    TileInfo{"i",  TileType::Default},
-    TileInfo{"t",  TileType::Default},
-    TileInfo{"edge",  TileType::Default}
+    TileInfo{"opening", TileType::Start},
+    TileInfo{"opening_out", TileType::End},
+    TileInfo{"i",  TileType::I},
+    TileInfo{"t",  TileType::T},
+    TileInfo{"edge",  TileType::Edge}
   };
 
-  const uint16_t tilePack = 0;
-
-  struct TileMap {
-    const std::string path = "C:/Users/saman/src/PipeFlood/PipeFlood/assets/textures/";
-    Tex tex;
-    Sprite sprite;
-
-    TileMap(std::string filename) {
-      tex.loadFromFile(path + filename);
-      sprite.setTexture(tex);
-    }
-
-    Sprite createSprite(v2 pos, v2 size, uint16_t rotation) {
-      float pixelX = pos.x * size.x, pixelY = pos.y * size.y;
-      sprite.setPosition(sf::Vector2f(pixelX + size.x / 2, pixelY + size.y / 2));
-      sprite.setOrigin(sf::Vector2f(size.x / 2, size.y / 2));
-      sprite.setRotation(rotation * 90.0f);
-
-      return sprite;
-    }
-  };
-
-
-  struct Tile {
+  struct Tkile {
     TileType type;
     const uint16_t tileSize = 64;
     std::string filename;
-    sf::Sprite sprite;
-    sf::Texture tex;
+    Sprite sprite;
+    Tex tex;
     const float scale = 1.0f;
     const std::string path = "C:/Users/saman/src/PipeFlood/PipeFlood/assets/textures/";
 
-    Tile(const std::string filename) {
-      Tile(filename, TileType::Default);
-    }
-
-    Tile(const std::string filename, TileType type) : filename{ filename }, type{ type } {
-      if (!tex.loadFromFile(path + filename)) { throw; }
+    Tkile(const std::string filename, TileType type = TileType::Default) : filename{ filename }, type{ type } {
+      const auto file = path + filename;
+      const auto loaded = tex.loadFromFile(file);
+      if (!loaded) { throw; }
       tex.setSmooth(true);
       sprite.setTexture(tex);
     }

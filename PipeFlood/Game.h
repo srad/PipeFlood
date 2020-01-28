@@ -1,39 +1,37 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <iostream>
-#include "Game.h";
-#include "GameScreen.h";
+#include "Game.h"
+#include "GameScreen.h"
 #include "StartScreen.h"
+#define DEBUG
 
 namespace PipeFlood {
 
-  struct EngineConfig {
-    uint16_t fps;
-    bool vSync;
-  };
+  struct EngineConfig { uint16_t fps;    bool vSync; };
   
   class Game {
-  public:
+  private:
     Screen* screen;
     GameScreen gameScreen{ v2{15, 12}, [this] {} };
-    StartScreen startScreen{ v2{15, 12}, [this] {
-      screen = &gameScreen;
-    } };
-    InputInfo inputInfo;
-    sf::RenderWindow window{ sf::VideoMode(gameScreen.resolution.x, gameScreen.resolution.y), "PipeFlood" };
+    StartScreen startScreen{ v2{15, 12}, [this] { screen = &gameScreen; } };
 
+    InputInfo inputInfo;
+    sf::RenderWindow window{ sf::VideoMode(gameScreen.resolution.x, gameScreen.resolution.y), "PipeFlood", sf::Style::Titlebar | sf::Style::Close };
+
+    sf::Clock clock;
+
+  public:
     Game() {
       screen = &startScreen;
-      Game(EngineConfig{ 30, false });
-    }
-
-    Game(const EngineConfig config) {
-      window.setFramerateLimit(config.fps);
-      window.setVerticalSyncEnabled(config.vSync);
+      window.setFramerateLimit(30);
+      window.setVerticalSyncEnabled(false);
     }
 
     void start() {
       screen->create(&window);
+
+      // A pressed key or button calls only *once* the callback
       while (window.isOpen()) {
         sf::Event event;
         bool action;
@@ -65,8 +63,15 @@ namespace PipeFlood {
           }
         }
 
-        screen->update();
-        screen->draw(&window);
+        // CALLBACKS
+        float delta = clock.restart().asSeconds();
+        if (screen->doUpdate) {
+          screen->update(delta);
+        }
+        if (screen->doDraw) {
+          screen->draw(&window, delta);
+        }
+
         window.display();
       }
     }

@@ -161,10 +161,10 @@
     <ClInclude Include="GameScreen.h" />
     <ClInclude Include="GameTypes.h" />
     <ClInclude Include="Math.h" />
-    <ClInclude Include="PipeFlood.h" />
+    <ClInclude Include="Map.h" />
     <ClInclude Include="Screen.h" />
     <ClInclude Include="StartScreen.h" />
-    <ClInclude Include="Tile.h" />
+    <ClInclude Include="TilePack.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
