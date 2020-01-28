@@ -8,15 +8,10 @@ namespace PipeFlood {
   class StartScreen : public Screen {
   public:
     const std::string path = "C:/Users/saman/src/PipeFlood/PipeFlood/assets/textures/";
-    Tex tex;
-    Sprite sprite;
+    TileMap bg{ "splash.png" };
     bool start = false;
     
-    StartScreen(v2 size, std::function<void()> keypressed) : Screen(size, keypressed) {
-      if (!tex.loadFromFile(path + "splash.png")) { throw; }
-      tex.setSmooth(true);
-      sprite.setTexture(tex);
-    }
+    StartScreen(v2 size, std::function<void()> keypressed) : Screen(size, keypressed) {}
 
     void key(sf::RenderWindow* window, sf::Event* event, PipeFlood::InputInfo* input) {
       keypressed();
@@ -30,7 +25,7 @@ namespace PipeFlood {
 
     void draw(sf::RenderWindow* window) {
       window->clear(sf::Color::Black);
-      window->draw(sprite);
+      window->draw(bg.sprite);
     }
 
     void mouse(sf::RenderWindow* window, sf::Event* event, PipeFlood::InputInfo* input) {};

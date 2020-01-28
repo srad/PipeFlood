@@ -28,8 +28,8 @@ namespace PipeFlood {
     uint16_t** rotation;
     bool** joined;
 
-    std::vector<PipeFlood::Tiles::Tile> vTiles;
-    std::vector<PipeFlood::Tiles::Tile> vWaterTiles;
+    std::vector<Tile> vTiles;
+    std::vector<Tile> vWaterTiles;
 
     Map(v2 size) : size{ size }, target{ (uint16_t)(size.x - 1), (uint16_t)(size.y - 1) } {
       field = new uint16_t * [size.x];
@@ -46,9 +46,9 @@ namespace PipeFlood {
       this->resolution = v2{ static_cast<uint16_t>(tileResized.x* size.x), static_cast<uint16_t>(tileResized.y* size.y) };
 
       // Load textures
-      for (const auto& tile : Tiles::vPipeFiles) {
-        vTiles.push_back(Tiles::Tile(tile.filename + std::to_string(Tiles::tilePack) + ".png", tile.type));
-        vWaterTiles.push_back(Tiles::Tile(tile.filename + std::to_string(Tiles::tilePack) + "_water.png", tile.type));
+      for (const auto& tile : vPipeFiles) {
+        vTiles.push_back(Tile("pipes/" + std::to_string(tilePack) + "/" + tile.filename + ".png", tile.type));
+        vWaterTiles.push_back(Tile("pipes/" + std::to_string(tilePack) + "/water/" + tile.filename + ".png", tile.type));
       }
 
       // Random map
@@ -58,7 +58,7 @@ namespace PipeFlood {
           if (x == 0 && y == 0) { field[x][y] = 0; }
           // Output
           else if ((x == (size.x - 1)) && (y == (size.y - 1))) { field[x][y] = 1; }
-          else { field[x][y] = PipeFlood::Math::rnd(2, Tiles::vPipeFiles.size() - 1); }
+          else { field[x][y] = PipeFlood::Math::rnd(2, vPipeFiles.size() - 1); }
           rotation[x][y] = PipeFlood::Math::rnd(0, 3);
 #ifdef DEBUG
           std::cout << field[x][y] << "(" << rotation[x][y] << ") ";
@@ -135,13 +135,7 @@ namespace PipeFlood {
       }
     }
 
-    /*
-    Tex* getTex(v2 pos) {
-      return doesJoin(pos) ? &vWaterTiles[field[pos.x][pos.y]].tex : &vTiles[field[pos.x][pos.y]].tex;
-    }
-    */
-
-    float darkenColor = 0.6f;
+    float darkenColor = 0.5f;
 
     Sprite getSprite(v2 pos, bool waterSprite = false) {
       auto s = (waterSprite ? vWaterTiles[field[pos.x][pos.y]] : vTiles[field[pos.x][pos.y]]).createSprite(pos, tileResized, rotation[pos.x][pos.y]);
@@ -150,10 +144,6 @@ namespace PipeFlood {
         s.setColor(sf::Color{ (sf::Uint8)(col.r * darkenColor), (sf::Uint8)(col.g * darkenColor), (sf::Uint8)(col.b * darkenColor) });
       }
       return s;
-      //return (joined[pos.x][pos.y]
-      //  ? vWaterTiles[field[pos.x][pos.y]]
-      //  : vTiles[field[pos.x][pos.y]])
-      //  .createSprite(pos, tileResized, rotation[pos.x][pos.y]);
     }
 
     PathInfo BFS(v2 start, v2 goal) {
