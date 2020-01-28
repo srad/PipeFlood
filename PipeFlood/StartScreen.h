@@ -1,6 +1,6 @@
 #pragma once
-#include "Screen.h";
-#include "Tile.h";
+#include "Screen.h"
+#include "Tile.h"
 #include <SFML/Graphics.hpp>
 #include <functional>
 
@@ -23,14 +23,22 @@ namespace PipeFlood {
       }
     }
 
-    void draw(sf::RenderWindow* window) {
+    void update(float delta) {};
+    void draw(sf::RenderWindow* window, float delta) {
       window->clear(sf::Color::Black);
       window->draw(bg.sprite);
     }
 
     void mouse(sf::RenderWindow* window, sf::Event* event, PipeFlood::InputInfo* input) {};
-    void update() {};
-    void create(sf::RenderWindow* window) {};
-    void resize(sf::RenderWindow* window) {};
+    void create(sf::RenderWindow* window) {
+      sf::Vector2f targetSize(window->getSize().x, window->getSize().y);
+
+      bg.sprite.setScale(
+        targetSize.x / bg.sprite.getLocalBounds().width,
+        targetSize.y / bg.sprite.getLocalBounds().height);
+    };
+    void resize(sf::RenderWindow* window) {
+      create(window);
+    };
   };
 }
