@@ -7,14 +7,11 @@
 #define DEBUG
 
 namespace PipeFlood {
-
-  struct EngineConfig { uint16_t fps;    bool vSync; };
-  
   class Game {
   private:
     Screen* screen;
     GameScreen gameScreen{ v2{15, 12}, [this] {} };
-    StartScreen startScreen{ v2{15, 12}, [this] { screen = &gameScreen; } };
+    StartScreen startScreen{ v2{15, 12}, [this] { setScreen(&gameScreen); } };
 
     InputInfo inputInfo;
     sf::RenderWindow window{ sf::VideoMode(gameScreen.resolution.x, gameScreen.resolution.y), "PipeFlood", sf::Style::Titlebar | sf::Style::Close };
@@ -74,6 +71,12 @@ namespace PipeFlood {
 
         window.display();
       }
+    }
+
+    void setScreen(Screen* screen) {
+      this->screen->close(&window);
+      this->screen = screen;
+      this->screen->create(&window);
     }
   };
 

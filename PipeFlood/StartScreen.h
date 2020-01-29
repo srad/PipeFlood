@@ -1,6 +1,7 @@
 #pragma once
 #include "Screen.h"
 #include "Tile.h"
+#include "TilePack.h"
 #include <SFML/Graphics.hpp>
 #include <functional>
 
@@ -40,5 +41,7 @@ namespace PipeFlood {
     void resize(sf::RenderWindow* window) {
       create(window);
     };
+
+    void close(sf::RenderWindow* window) {}
   };
 }

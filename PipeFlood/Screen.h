@@ -18,6 +18,7 @@ namespace PipeFlood {
     virtual void update(float delta) = 0;
     virtual void draw(sf::RenderWindow* window, float delta) = 0;
     virtual void create(sf::RenderWindow* window) = 0;
+    virtual void close(sf::RenderWindow* window) = 0;
     virtual void resize(sf::RenderWindow* window) = 0;
   };
 }

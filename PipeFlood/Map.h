@@ -10,7 +10,7 @@
 namespace PipeFlood {
   struct PathInfo {
     std::vector<v2> path;
-    std::unordered_map<std::string, bool>  visited;
+    std::unordered_map<std::string, bool> visited;
     std::unordered_map<std::string, v2> parent;
   };
 
@@ -19,10 +19,9 @@ namespace PipeFlood {
     v2 resolution;
     v2 target;
     uint16_t margin;
-    
+
     const float tileScale = 1.0f;
     const uint16_t tileSize = 64;
-    std::unordered_map<std::string, v2> water;
 
     uint16_t** field;
     uint16_t** rotation;
@@ -41,7 +40,7 @@ namespace PipeFlood {
         joined[x] = new bool[size.y];
       }
 
-      this->tileResized = v2{ static_cast<uint16_t>(tileSize * tileScale), static_cast<uint16_t>(tileSize * tileScale) };
+      this->tileResized = v2{ static_cast<uint16_t>(tileSize* tileScale), static_cast<uint16_t>(tileSize* tileScale) };
       this->resolution = v2{ static_cast<uint16_t>(tileResized.x* size.x), static_cast<uint16_t>(tileResized.y* size.y) };
 
       // Random map
@@ -94,7 +93,7 @@ namespace PipeFlood {
         && left
         && Pipes::vPipeMask[field[pos.x - 1][pos.y]][rotation[pos.x - 1][pos.y]][Side::right];
     }
-    
+
     bool rightJoin(const std::vector<bool>& sides, v2 pos) {
       const auto& right = sides[Side::right];
 
