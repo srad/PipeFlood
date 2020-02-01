@@ -7,20 +7,26 @@
 #define DEBUG
 
 namespace PipeFlood {
+
   class Game {
   private:
     Screen* screen;
-    GameScreen gameScreen{ v2{15, 12}, [this] {} };
-    StartScreen startScreen{ v2{15, 12}, [this] { setScreen(&gameScreen); } };
+    GameInfo gameInfo;
+    GameScreen gameScreen;
+    StartScreen startScreen;
 
     InputInfo inputInfo;
-    sf::RenderWindow window{ sf::VideoMode(gameScreen.resolution.x, gameScreen.resolution.y), "PipeFlood", sf::Style::Titlebar | sf::Style::Close };
+    sf::RenderWindow window;
 
     sf::Clock clock;
 
   public:
-    Game() {
-      screen = &startScreen;
+    Game() :
+      gameInfo{ v2{64, 64}, v2{15, 15}, 0 },
+      window{ sf::VideoMode(gameInfo.resolution.x, gameInfo.resolution.y), "StarBridge", sf::Style::Titlebar | sf::Style::Close },
+      startScreen{ gameInfo, [this] { setScreen(&gameScreen); } },
+      gameScreen{ gameInfo, [this] { } },
+      screen{ &startScreen } {
       window.setFramerateLimit(30);
       window.setVerticalSyncEnabled(false);
     }

@@ -109,6 +109,38 @@ namespace PipeFlood {
         { pipe, none, none, pipe },
         { pipe, none, pipe, none },
         { none, pipe, pipe, none },
+      },
+
+      // No connection
+      // +---+---+---+
+      // |   |   |   |
+      // +---+---+---+
+      // |   | X |   |
+      // +---+---+---+
+      // |   |   |   |
+      // +---+---+---+
+      std::vector<std::vector<bool>>
+      {
+        { none, none, none, none },
+        { none, none, none, none },
+        { none, none, none, none },
+        { none, none, none, none },
+      },
+
+      // No connection
+      // +---+---+---+
+      // |   |   |   |
+      // +---+---+---+
+      // |   | X |   |
+      // +---+---+---+
+      // |   |   |   |
+      // +---+---+---+
+      std::vector<std::vector<bool>>
+      {
+        { none, none, none, none },
+        { none, none, none, none },
+        { none, none, none, none },
+        { none, none, none, none },
       }
     };
   }

@@ -5,53 +5,58 @@
 #include "Tile.h"
 #include "TilePack.h"
 #include <queue>
-#include <unordered_map>
 
 namespace PipeFlood {
-  struct PathInfo {
-    std::vector<v2> path;
-    std::unordered_map<std::string, bool> visited;
-    std::unordered_map<std::string, v2> parent;
-  };
-
   struct Map {
-    v2 size, tileResized;
-    v2 resolution;
     v2 target;
-    uint16_t margin;
 
-    const float tileScale = 1.0f;
-    const uint16_t tileSize = 64;
+    // Unjoined pipes are drawn darker
+    const float darkenColor = 0.6f;
 
     uint16_t** field;
     uint16_t** rotation;
     bool** joined;
 
+    GameInfo gameInfo;
     JoinsPack joinsPack{ 2 };
 
-    Map(v2 size) : size{ size }, target{ (uint16_t)(size.x - 1), (uint16_t)(size.y - 1) } {
-      field = new uint16_t * [size.x];
-      rotation = new uint16_t * [size.x];
-      joined = new bool* [size.x];
+    Map(GameInfo gameInfo) : gameInfo{ gameInfo }, target{ (uint16_t)(gameInfo.boardSize.x - 1), (uint16_t)(gameInfo.boardSize.y - 1) } {
+      field = new uint16_t * [gameInfo.boardSize.x];
+      rotation = new uint16_t * [gameInfo.boardSize.x];
+      joined = new bool* [gameInfo.boardSize.x];
 
-      for (uint16_t x = 0; x < size.x; x++) {
-        field[x] = new uint16_t[size.y];
-        rotation[x] = new uint16_t[size.y];
-        joined[x] = new bool[size.y];
+      for (uint16_t x = 0; x < gameInfo.boardSize.x; x++) {
+        field[x] = new uint16_t[gameInfo.boardSize.y];
+        rotation[x] = new uint16_t[gameInfo.boardSize.y];
+        joined[x] = new bool[gameInfo.boardSize.y];
       }
 
-      this->tileResized = v2{ static_cast<uint16_t>(tileSize* tileScale), static_cast<uint16_t>(tileSize* tileScale) };
-      this->resolution = v2{ static_cast<uint16_t>(tileResized.x* size.x), static_cast<uint16_t>(tileResized.y* size.y) };
-
       // Random map
-      for (uint16_t x = 0; x < size.x; x++) {
-        for (uint16_t y = 0; y < size.y; y++) {
+      for (uint16_t x = 0; x < gameInfo.boardSize.x; x++) {
+        for (uint16_t y = 0; y < gameInfo.boardSize.y; y++) {
+          rotation[x][y] = 0;
           // Input
           if (x == 0 && y == 0) { field[x][y] = 0; }
           // Output
-          else if ((x == (size.x - 1)) && (y == (size.y - 1))) { field[x][y] = 1; }
-          else { field[x][y] = Math::rnd(2, vPipeFiles.size() - 1); }
-          rotation[x][y] = Math::rnd(0, 3);
+          else if ((x == (gameInfo.boardSize.x - 1)) && (y == (gameInfo.boardSize.y - 1))) {
+            field[x][y] = 1;
+          }
+          // Pipes
+          else {
+            auto r = Math::rnd(0, 100);
+            uint16_t type = TileType::None;
+            if (r <= 3) { type = TileType::Start; }
+            else if (r <= 6) { type = TileType::End; }
+            else if (r <= 35) { type = TileType::Edge; }
+            else if (r <= 60) { type = TileType::I; }
+            else if (r <= 90) { type = TileType::T; }
+            else if (r <= 97) { type = TileType::None2; }
+            field[x][y] = type;
+
+            if (field[x][y] != TileType::None && field[x][y] != TileType::None2) {
+              rotation[x][y] = Math::rnd(0, 3);
+            }
+          }
 #ifdef DEBUG
           std::cout << field[x][y] << "(" << rotation[x][y] << ") ";
 #endif
@@ -71,8 +76,8 @@ namespace PipeFlood {
     }
 
     void checkJoins() {
-      for (uint16_t x = 0; x < size.x; x++) {
-        for (uint16_t y = 0; y < size.y; y++) {
+      for (uint16_t x = 0; x < gameInfo.boardSize.x; x++) {
+        for (uint16_t y = 0; y < gameInfo.boardSize.y; y++) {
           joined[x][y] = doesJoin(v2{ x,y });
         }
       }
@@ -97,7 +102,7 @@ namespace PipeFlood {
     bool rightJoin(const std::vector<bool>& sides, v2 pos) {
       const auto& right = sides[Side::right];
 
-      return (pos.x < (size.x - 1))
+      return (pos.x < (gameInfo.boardSize.x - 1))
         && right
         && Pipes::vPipeMask[field[pos.x + 1][pos.y]][rotation[pos.x + 1][pos.y]][Side::left];
     }
@@ -113,7 +118,7 @@ namespace PipeFlood {
     bool bottomJoin(const std::vector<bool>& sides, v2 pos) {
       const auto& bottom = sides[Side::bottom];
 
-      return (pos.y < size.y - 1)
+      return (pos.y < gameInfo.boardSize.y - 1)
         && bottom
         && Pipes::vPipeMask[field[pos.x][pos.y + 1]][rotation[pos.x][pos.y + 1]][Side::top];
     }
@@ -129,8 +134,6 @@ namespace PipeFlood {
 #endif
     }
 
-    float darkenColor = 0.7f;
-
     Sprite getSprite(v2 pos, bool active = false) {
       Sprite sprite = joinsPack.toSprite(pos, field[pos.x][pos.y], active, rotation[pos.x][pos.y]);
       if (!joined[pos.x][pos.y] && !active) {
@@ -139,46 +142,36 @@ namespace PipeFlood {
       }
       return sprite;
     }
-
-    std::vector<v2> backTraceFrom(PathInfo& pathInfo, v2 from, v2 to) {
-      std::vector<v2> path;
-      path.push_back(from);
+    
+    TraceInfo backTraceFrom(PathInfo& pathInfo, v2 from, v2 to) {
+      TraceInfo trace;
+      trace.add(from);
 
       auto it = pathInfo.parent.find(from.str());
-      path.push_back(it->second);
+      trace.path.push_back(it->second);
       while (it->second.x != to.x && it->second.y != to.y) {
         it = pathInfo.parent.find(it->second.str());
-        path.push_back(it->second);
+        trace.add(it->second);
       }
-      path.push_back(to);
+      trace.add(to);
 
-      return path;
+      return trace;
     }
 
-    PathInfo BFS(v2 start, v2 goal) {
-      auto pathInfo = PathInfo{};
-      std::queue<v2> queue{};
-      auto path = BFS(start, goal, queue, pathInfo);
-
-      return pathInfo;
-    }
-
-    PathInfo BFS(v2 start, v2 goal, std::queue<v2> queue, PathInfo& pathInfo) {
+    PathInfo BFS(v2 start, v2 goal, std::queue<v2> queue = std::queue<v2>{}, PathInfo pathInfo = PathInfo{}) {
       queue.push(start);
 
       while (!queue.empty()) {
         auto v = queue.front();
         queue.pop();
 
-        if (v.str() == goal.str()) {
+        if (v == goal) {
           return pathInfo;
         }
 
         // Does this pipe connect to any other?
-        bool joins = joined[v.x][v.y];
-
         // insert all adjacent points
-        if (joins) {
+        if (joined[v.x][v.y]) {
           const auto& sides = Pipes::vPipeMask[field[v.x][v.y]][rotation[v.x][v.y]];
           auto left = v2{ (uint16_t)(v.x - 1), v.y };
           auto right = v2{ (uint16_t)(v.x + 1), v.y };

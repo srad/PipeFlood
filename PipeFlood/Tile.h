@@ -7,7 +7,8 @@
 #include <SFML\System\Vector2.hpp>
 
 namespace PipeFlood {
-  enum TileType { Start = 0, End = 1, I = 2, T = 3, Edge = 4, None = 5, Default = 6 };
+  // Must correspond to the Pipefiles vector
+  enum TileType { Start = 0, End = 1, I = 2, T = 3, Edge = 4, None = 5, None2 = 6 };
   struct TileInfo { std::string filename; TileType type; };
 
   const std::vector<TileInfo> vPipeFiles
@@ -17,7 +18,9 @@ namespace PipeFlood {
     TileInfo{"opening_out", TileType::End},
     TileInfo{"i",  TileType::I},
     TileInfo{"t",  TileType::T},
-    TileInfo{"edge",  TileType::Edge}
+    TileInfo{"edge",  TileType::Edge},
+    TileInfo{"none",  TileType::None},
+    TileInfo{"none2",  TileType::None2}
   };
 
   struct Tkile {
@@ -29,7 +32,7 @@ namespace PipeFlood {
     const float scale = 1.0f;
     const std::string path = "C:/Users/saman/src/PipeFlood/PipeFlood/assets/textures/";
 
-    Tkile(const std::string filename, TileType type = TileType::Default) : filename{ filename }, type{ type } {
+    Tkile(const std::string filename, TileType type) : filename{ filename }, type{ type } {
       const auto file = path + filename;
       const auto loaded = tex.loadFromFile(file);
       if (!loaded) { throw; }

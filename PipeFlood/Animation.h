@@ -17,16 +17,20 @@ namespace PipeFlood {
   typedef float Milliseconds;
   typedef float Distance;
 
-  struct UpDownAnimator : public Animator<Sprite> {
+  struct MoveAnimator : public Animator<Sprite> {
+  private:
     sf::Clock animClock;
     enum class AnimState { Start, Up, Down };
     AnimState state = AnimState::Start;
-    float offset, milliseconds;
+    v2 offset;
+    float milliseconds;
 
-    UpDownAnimator(Sprite& sprite, Distance offset, Milliseconds milliseconds) : offset{ offset }, milliseconds{ milliseconds }, Animator{ sprite } {}
+  public:
+    MoveAnimator(Sprite& sprite, v2 offset, Milliseconds milliseconds) : offset{ offset }, milliseconds{ milliseconds }, Animator{ sprite } {}
 
     void update(float delta) override {
       float moveY = 0;
+      float moveX = 0;
       auto dT = animClock.getElapsedTime().asMilliseconds();
 
       if (dT > milliseconds) {
@@ -34,17 +38,56 @@ namespace PipeFlood {
         case AnimState::Start:
           state = AnimState::Up;
           animClock.restart();
-          moveY = -offset;
+          moveY = -offset.y;
+          moveX = -offset.x;
           break;
         case AnimState::Up:
           state = AnimState::Start;
           animClock.restart();
-          moveY = offset;
+          moveY = offset.y;
+          moveX = offset.x;
           break;
         }
       }
 
-      entity.move(sf::Vector2f{ 0, moveY });
+      entity.move(sf::Vector2f{ moveX, moveY });
+    }
+  };
+  
+  struct ScaleAnimator : public Animator<Sprite> {
+  private:
+    enum class AnimState { Up, Down };
+    AnimState state = AnimState::Up;
+    float growth;
+    float current = 0;
+    float max;
+
+  public:
+    ScaleAnimator(Sprite& sprite, float growth, float max) : growth{ growth }, max{ max }, Animator{ sprite } {}
+
+    void update(float delta) override {
+      float scale = 1.0;
+      switch (state) {
+      case AnimState::Up:
+        if (current < max) {
+          current += growth;
+          scale = 1 + growth;
+        }
+        else {
+          state = AnimState::Down;
+        }
+        break;
+      case AnimState::Down:
+        if (current > 0) {
+          current -= growth;
+          scale = 1 - growth;
+        }
+        else {
+          state = AnimState::Up;
+        }
+        break;
+      }
+      entity.scale(sf::Vector2f{ scale, scale });
     }
   };
 

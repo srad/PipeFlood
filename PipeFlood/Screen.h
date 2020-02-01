@@ -6,9 +6,9 @@
 namespace PipeFlood {
   class Screen {
   public:
-    v2 size;
+    GameInfo gameInfo;
     std::function<void()> keypressed;
-    Screen(PipeFlood::v2 size, std::function<void()> keypressed) : size{ size }, keypressed{ keypressed } {};
+    Screen(GameInfo gameInfo, std::function<void()> keypressed) : gameInfo{ gameInfo }, keypressed{ keypressed } {};
     bool doUpdate = true;
     bool doDraw = true;
 

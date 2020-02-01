@@ -32,12 +32,14 @@ namespace PipeFlood {
   };
 
   struct JoinTile {
-    TileMap normal;
-    TileMap active;
+    TileMap off;
+    TileMap on;
+    float probability;
 
-    JoinTile(std::string filename, uint16_t pack) :
-      normal{ "pipes/" + std::to_string(pack) + "/" + filename },
-      active{ "pipes/" + std::to_string(pack) + "/water/" + filename } {}
+    JoinTile(std::string filename, uint16_t pack, float probability) :
+      off{ "pipes/" + std::to_string(pack) + "/off/" + filename },
+      on{ "pipes/" + std::to_string(pack) + "/on/" + filename },
+      probability{ probability } {}
   };
 
   struct Pack {
@@ -50,8 +52,8 @@ namespace PipeFlood {
 
     Sprite toSprite(v2 pos, uint16_t index, bool active, uint16_t rotation, v2 size = v2{ 64, 64 }) {
       Sprite sprite = active
-        ? connections[index].active.toSprite()
-        : connections[index].normal.toSprite();
+        ? connections[index].on.toSprite()
+        : connections[index].off.toSprite();
 
       float pixelX = pos.x * size.x, pixelY = pos.y * size.y;
       sprite.setPosition(sf::Vector2f(pixelX + size.x / 2, pixelY + size.y / 2));
@@ -62,14 +64,15 @@ namespace PipeFlood {
       return sprite;
     }
 
-  private:
-    JoinTile connections[5] =
+    std::vector<JoinTile> connections
     {
-      JoinTile{ "opening.png", pack },
-      JoinTile{ "opening_out.png", pack },
-      JoinTile{ "i.png",  pack },
-      JoinTile{ "t.png",  pack },
-      JoinTile{ "edge.png",  pack }
+      JoinTile{ "opening.png", pack, 0.1 },
+      JoinTile{ "opening_out.png", pack, 0.1 },
+      JoinTile{ "i.png",  pack, 0.5 },
+      JoinTile{ "t.png",  pack, 0.50 },
+      JoinTile{ "edge.png",  pack, 0.50 },
+      JoinTile{ "none.png",  pack, 0.1 },
+      JoinTile{ "none2.png",  pack, 0.1 },
     };
   };
 
