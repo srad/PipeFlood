@@ -5,6 +5,7 @@
 #include "Tile.h"
 #include "Screen.h"
 #include "TilePack.h"
+#include "Animation.h"
 
 namespace PipeFlood {
   typedef std::vector<Sprite> Sprites;
@@ -12,6 +13,8 @@ namespace PipeFlood {
   class GameScreen : public Screen {
   public:
     v2 resolution;
+
+    AnimationController<Sprite> controller;
 
     TileMap selector{ "selector.png" };
     TilePack tilePack{ 1 };
@@ -21,10 +24,29 @@ namespace PipeFlood {
     PipeFlood::PathInfo pathInfo;
     bool won = false;
 
+  private:
+    Map map;  
+    v2 cursor = v2{ 0, 0 };
+    std::vector<v2> backtrace;
+
+  public:
     GameScreen(v2 size, std::function<void()> keypressed) :
       Screen(size, keypressed),
-      map{ size },
-      resolution{ static_cast<uint16_t>(size.x * 64), static_cast<uint16_t>(size.y * 64) } {
+      resolution{ static_cast<uint16_t>(size.x * 64), static_cast<uint16_t>(size.y * 64) },
+      map{ size } {};
+
+
+    std::unique_ptr<UpDownAnimator> anim;
+
+    void create(sf::RenderWindow* window) {
+      traverse([this](uint16_t x, uint16_t y, uint16_t lastX, uint16_t lastY, float pixelX, float pixelY) {
+        const auto v = v2{ x, y };
+        mapSprites.push_back(*tilePack.spriteGrid(x, y, lastX, lastY, sf::Vector2f{ pixelX, pixelY }));
+        auto sprite = map.getSprite(v, false);
+        connectors.push_back(sprite);
+      });
+      controller.push_back(std::make_unique<UpDownAnimator>(connectors[0], 8, 300));
+      controller.push_back(std::make_unique<UpDownAnimator>(connectors[connectors.size()-1], 5, 500));
     };
 
     void key(sf::RenderWindow* window, sf::Event* event, PipeFlood::InputInfo* input) {
@@ -46,15 +68,10 @@ namespace PipeFlood {
       selector.sprite.setPosition(sf::Vector2f( (float)(cursor.x * map.tileResized.x), (float)(cursor.y * map.tileResized.y)));
     }
 
-    void update(float delta) {};
-
-    void create(sf::RenderWindow* window) {
-      traverse([this, window](uint16_t x, uint16_t y, uint16_t lastX, uint16_t lastY, float pixelX, float pixelY) {
-        const auto v = v2{ x, y };
-        mapSprites.push_back(*tilePack.spriteGrid(x, y, lastX, lastY, sf::Vector2f{ pixelX, pixelY }));
-        auto sprite = map.getSprite(v, false);
-        connectors.push_back(sprite);
-      });
+    void update(float delta) {
+      for (const auto& c : controller) {
+        c->update(delta);
+      }
     };
 
     void resize(sf::RenderWindow* window) {};
@@ -95,10 +112,6 @@ namespace PipeFlood {
     void close(sf::RenderWindow* window) {}
 
   private:
-    Map map;
-    v2 cursor = v2{ 0, 0 };
-    std::vector<v2> backtrace;
-
     void rotate(v2 pos) {
       won = false;
       map.rotation[cursor.x][cursor.y] = (map.rotation[cursor.x][cursor.y] + 1) % 4;
