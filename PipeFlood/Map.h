@@ -20,37 +20,39 @@ namespace PipeFlood {
     GameInfo gameInfo;
     JoinsPack joinsPack{ 2 };
 
-    Map(GameInfo gameInfo) : gameInfo{ gameInfo }, target{ (uint16_t)(gameInfo.boardSize.x - 1), (uint16_t)(gameInfo.boardSize.y - 1) } {
-      field = new uint16_t * [gameInfo.boardSize.x];
-      rotation = new uint16_t * [gameInfo.boardSize.x];
-      joined = new bool* [gameInfo.boardSize.x];
+    Map(GameInfo gameInfo) : gameInfo{ gameInfo }, target{ (uint16_t)(gameInfo.mapSize.x - 1), (uint16_t)(gameInfo.mapSize.y - 1) } {
+      field = new uint16_t * [gameInfo.mapSize.x];
+      rotation = new uint16_t * [gameInfo.mapSize.x];
+      joined = new bool* [gameInfo.mapSize.x];
 
-      for (uint16_t x = 0; x < gameInfo.boardSize.x; x++) {
-        field[x] = new uint16_t[gameInfo.boardSize.y];
-        rotation[x] = new uint16_t[gameInfo.boardSize.y];
-        joined[x] = new bool[gameInfo.boardSize.y];
+      for (uint16_t x = 0; x < gameInfo.mapSize.x; x++) {
+        field[x] = new uint16_t[gameInfo.mapSize.y];
+        rotation[x] = new uint16_t[gameInfo.mapSize.y];
+        joined[x] = new bool[gameInfo.mapSize.y];
       }
 
       // Random map
-      for (uint16_t x = 0; x < gameInfo.boardSize.x; x++) {
-        for (uint16_t y = 0; y < gameInfo.boardSize.y; y++) {
+      for (uint16_t x = 0; x < gameInfo.mapSize.x; x++) {
+        for (uint16_t y = 0; y < gameInfo.mapSize.y; y++) {
           rotation[x][y] = 0;
           // Input
           if (x == 0 && y == 0) { field[x][y] = 0; }
           // Output
-          else if ((x == (gameInfo.boardSize.x - 1)) && (y == (gameInfo.boardSize.y - 1))) {
+          else if ((x == (gameInfo.mapSize.x - 1)) && (y == (gameInfo.mapSize.y - 1))) {
             field[x][y] = 1;
           }
           // Pipes
           else {
             auto r = Math::rnd(0, 100);
             uint16_t type = TileType::None;
-            if (r <= 3) { type = TileType::Start; }
-            else if (r <= 6) { type = TileType::End; }
-            else if (r <= 35) { type = TileType::Edge; }
+            if (r <= 5) { type = TileType::None; }
+            else if (r <= 10) { type = TileType::Start; }
+            else if (r <= 15) { type = TileType::End; }
+            else if (r <= 40) { type = TileType::Edge; }
             else if (r <= 60) { type = TileType::I; }
             else if (r <= 90) { type = TileType::T; }
-            else if (r <= 97) { type = TileType::None2; }
+            else if (r <= 100) { type = TileType::None2; }
+            //else if (r <= 99) { type = TileType::Void; }
             field[x][y] = type;
 
             if (field[x][y] != TileType::None && field[x][y] != TileType::None2) {
@@ -76,8 +78,8 @@ namespace PipeFlood {
     }
 
     void checkJoins() {
-      for (uint16_t x = 0; x < gameInfo.boardSize.x; x++) {
-        for (uint16_t y = 0; y < gameInfo.boardSize.y; y++) {
+      for (uint16_t x = 0; x < gameInfo.mapSize.x; x++) {
+        for (uint16_t y = 0; y < gameInfo.mapSize.y; y++) {
           joined[x][y] = doesJoin(v2{ x,y });
         }
       }
@@ -102,7 +104,7 @@ namespace PipeFlood {
     bool rightJoin(const std::vector<bool>& sides, v2 pos) {
       const auto& right = sides[Side::right];
 
-      return (pos.x < (gameInfo.boardSize.x - 1))
+      return (pos.x < (gameInfo.mapSize.x - 1))
         && right
         && Pipes::vPipeMask[field[pos.x + 1][pos.y]][rotation[pos.x + 1][pos.y]][Side::left];
     }
@@ -118,7 +120,7 @@ namespace PipeFlood {
     bool bottomJoin(const std::vector<bool>& sides, v2 pos) {
       const auto& bottom = sides[Side::bottom];
 
-      return (pos.y < gameInfo.boardSize.y - 1)
+      return (pos.y < gameInfo.mapSize.y - 1)
         && bottom
         && Pipes::vPipeMask[field[pos.x][pos.y + 1]][rotation[pos.x][pos.y + 1]][Side::top];
     }
@@ -134,8 +136,8 @@ namespace PipeFlood {
 #endif
     }
 
-    Sprite getSprite(v2 pos, bool active = false) {
-      Sprite sprite = joinsPack.toSprite(pos, field[pos.x][pos.y], active, rotation[pos.x][pos.y]);
+    Sprite getSprite(v2 pixelPos, v2 pos, bool active = false) {
+      Sprite sprite = joinsPack.toSprite(pixelPos, field[pos.x][pos.y], active, rotation[pos.x][pos.y]);
       if (!joined[pos.x][pos.y] && !active) {
         auto col = sprite.getColor();
         sprite.setColor(sf::Color{ (sf::Uint8)(col.r * darkenColor), (sf::Uint8)(col.g * darkenColor), (sf::Uint8)(col.b * darkenColor) });

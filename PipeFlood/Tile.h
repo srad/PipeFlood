@@ -8,7 +8,7 @@
 
 namespace PipeFlood {
   // Must correspond to the Pipefiles vector
-  enum TileType { Start = 0, End = 1, I = 2, T = 3, Edge = 4, None = 5, None2 = 6 };
+  enum TileType { Start = 0, End = 1, I = 2, T = 3, Edge = 4, None = 5, None2 = 6, Void = 7 };
   struct TileInfo { std::string filename; TileType type; };
 
   const std::vector<TileInfo> vPipeFiles
@@ -20,7 +20,8 @@ namespace PipeFlood {
     TileInfo{"t",  TileType::T},
     TileInfo{"edge",  TileType::Edge},
     TileInfo{"none",  TileType::None},
-    TileInfo{"none2",  TileType::None2}
+    TileInfo{"none2",  TileType::None2},
+    TileInfo{"void",  TileType::Void}
   };
 
   struct Tkile {

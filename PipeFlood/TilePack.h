@@ -2,8 +2,41 @@
 #include "Tile.h"
 #include "GameTypes.h"
 #include <SFML\System\Vector2.hpp>
+#include <SFML\Audio\SoundBuffer.hpp>
+#include <SFML\Audio\Sound.hpp>
 
 namespace PipeFlood {
+
+  struct Audio {
+  private:
+    const std::string path = "../PipeFlood/assets/sounds/";
+    sf::SoundBuffer buffer;
+    sf::Sound sound;
+  public:
+    Audio(std::string filename) {
+      buffer.loadFromFile(path + filename);
+      sound.setBuffer(buffer);
+    }
+    void play() {
+      sound.play();
+    }
+  };
+
+  struct Font {
+    sf::Font font;
+    const std::string path = "../PipeFlood/assets/fonts/";
+    Font(std::string filename) {
+      font.loadFromFile(path + filename);
+    }
+    sf::Text text(std::string s, int fontSize) {
+      sf::Text text;
+      text.setFont(font);
+      text.setString(s);
+      text.setCharacterSize(fontSize);
+      text.setFillColor(sf::Color::Black);
+      return text;
+    }
+  };
 
   struct TileMap {
   private:
@@ -50,13 +83,12 @@ namespace PipeFlood {
   struct JoinsPack : public Pack {
     JoinsPack(uint16_t pack) : Pack{ pack } {}
 
-    Sprite toSprite(v2 pos, uint16_t index, bool active, uint16_t rotation, v2 size = v2{ 64, 64 }) {
+    Sprite toSprite(v2 pixelPos, uint16_t index, bool active, uint16_t rotation, v2 size = v2{ 64, 64 }) {
       Sprite sprite = active
         ? connections[index].on.toSprite()
         : connections[index].off.toSprite();
 
-      float pixelX = pos.x * size.x, pixelY = pos.y * size.y;
-      sprite.setPosition(sf::Vector2f(pixelX + size.x / 2, pixelY + size.y / 2));
+      sprite.setPosition(sf::Vector2f(pixelPos.x + size.x / 2, pixelPos.y + size.y / 2));
       sprite.setOrigin(sf::Vector2f(size.x / 2, size.y / 2));
       sprite.setRotation(rotation * 90.0f);
       //sprite.setScale(sf::Vector2f(scale, scale));
@@ -73,6 +105,7 @@ namespace PipeFlood {
       JoinTile{ "edge.png",  pack, 0.50 },
       JoinTile{ "none.png",  pack, 0.1 },
       JoinTile{ "none2.png",  pack, 0.1 },
+      JoinTile{ "void.png",  pack, 0.1 },
     };
   };
 
@@ -89,7 +122,8 @@ namespace PipeFlood {
     MapTile right{ "right.png", pack };
     MapTile top{ "top.png", pack };
     MapTile top_right{ "top_right.png", pack };
-
+    MapTile empty{ "void.png", pack };
+    
     const Sprite* spriteGrid(uint16_t x, uint16_t y, uint16_t lastX, uint16_t lastY, sf::Vector2f pos) {
       Sprite* s = &center.sprite;
       if (x == 0 && y == 0) { s = &left_top.sprite; }

@@ -19,10 +19,9 @@ namespace PipeFlood {
     sf::RenderWindow window;
 
     sf::Clock clock;
-
   public:
     Game() :
-      gameInfo{ v2{64, 64}, v2{15, 15}, 0 },
+      gameInfo{ v2{64, 64}, v2{11, 10}, 1 },
       window{ sf::VideoMode(gameInfo.resolution.x, gameInfo.resolution.y), "StarBridge", sf::Style::Titlebar | sf::Style::Close },
       startScreen{ gameInfo, [this] { setScreen(&gameScreen); } },
       gameScreen{ gameInfo, [this] { } },
@@ -68,12 +67,8 @@ namespace PipeFlood {
 
         // CALLBACKS
         float delta = clock.restart().asSeconds();
-        if (screen->doUpdate) {
-          screen->update(delta);
-        }
-        if (screen->doDraw) {
-          screen->draw(&window, delta);
-        }
+        screen->update(delta);
+        screen->draw(&window, delta);
 
         window.display();
       }

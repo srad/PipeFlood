@@ -25,15 +25,17 @@ namespace PipeFlood {
 
   struct GameInfo {
     v2 tileSize;
-    v2 boardSize;
+    v2 mapSize;
+    v2 screenSize;
     uint16_t margin;
     v2 resolution;
-    GameInfo(v2 tileSize, v2 boardSize, uint16_t margin) :
+    GameInfo(v2 tileSize, v2 mapSize, uint16_t margin) :
       tileSize{ tileSize },
-      boardSize{ boardSize },
+      mapSize{ mapSize },
       margin{ margin },
-      resolution{ v2{(uint16_t)(tileSize.x * (boardSize.x + 2 * margin)), (uint16_t)(tileSize.y * (boardSize.y + 2 * margin))} } {};
-};
+      screenSize{ v2{(uint16_t)(mapSize.x + (margin * 2 + 2)),(uint16_t)(mapSize.y + (margin * 2 + 2))} },
+      resolution{ v2{(uint16_t)(tileSize.x * (mapSize.x + 2 * margin + 2)), (uint16_t)(tileSize.y * (mapSize.y + 2 * margin + 2))} } {};
+  };
 
   typedef std::vector<v2> Path;
 

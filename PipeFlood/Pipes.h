@@ -141,6 +141,22 @@ namespace PipeFlood {
         { none, none, none, none },
         { none, none, none, none },
         { none, none, none, none },
+      },
+
+      // No connection
+      // +---+---+---+
+      // |   |   |   |
+      // +---+---+---+
+      // |   | X |   |
+      // +---+---+---+
+      // |   |   |   |
+      // +---+---+---+
+      std::vector<std::vector<bool>>
+      {
+        { none, none, none, none },
+        { none, none, none, none },
+        { none, none, none, none },
+        { none, none, none, none },
       }
     };
   }
