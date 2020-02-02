@@ -13,8 +13,14 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\screen">
-      <UniqueIdentifier>{f64db91a-fbee-4b4d-972b-f71f71d250d7}</UniqueIdentifier>
+    <Filter Include="Header Files\screens">
+      <UniqueIdentifier>{e87f33ca-6eb9-441e-94a1-b6ca638a1084}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\animations">
+      <UniqueIdentifier>{c6d5774d-d202-421d-b06d-a221881ab686}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\resources">
+      <UniqueIdentifier>{a2540398-076c-45e6-9614-317217cb4184}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -24,34 +30,37 @@
     <ClInclude Include="Math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Screen.h">
-      <Filter>Header Files\screen</Filter>
-    </ClInclude>
-    <ClInclude Include="GameScreen.h">
-      <Filter>Header Files\screen</Filter>
-    </ClInclude>
-    <ClInclude Include="StartScreen.h">
-      <Filter>Header Files\screen</Filter>
-    </ClInclude>
     <ClInclude Include="Game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Map.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TilePack.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="screens\GameScreen.h">
+      <Filter>Header Files\screens</Filter>
     </ClInclude>
-    <ClInclude Include="Animation.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="screens\Screen.h">
+      <Filter>Header Files\screens</Filter>
+    </ClInclude>
+    <ClInclude Include="screens\StartScreen.h">
+      <Filter>Header Files\screens</Filter>
+    </ClInclude>
+    <ClInclude Include="animations\Animation.h">
+      <Filter>Header Files\animations</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\Pipes.h">
+      <Filter>Header Files\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\Tile.h">
+      <Filter>Header Files\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\TilePack.h">
+      <Filter>Header Files\resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PipeFlood.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Pipes.h">
-      <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

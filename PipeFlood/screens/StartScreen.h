@@ -1,7 +1,7 @@
 #pragma once
 #include "Screen.h"
-#include "Tile.h"
-#include "TilePack.h"
+#include "../resources/Tile.h"
+#include "../resources/TilePack.h"
 #include <SFML/Graphics.hpp>
 #include <functional>
 

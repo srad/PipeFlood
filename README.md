@@ -8,21 +8,11 @@
 # Game
 Two points must be connected by rotating paths so that a reachable path connects them.
 
-# Demo
+# Demo with tile pack support
 
-![](https://raw.githubusercontent.com/srad/PipeFlood/master/Doc/media/demo3.jpg)
+![](https://raw.githubusercontent.com/srad/PipeFlood/master/Doc/media/demo5.jpg)
 
-![](https://raw.githubusercontent.com/srad/PipeFlood/master/Doc/media/demo4.jpg)
-
-## Tile Packs Support
-
-![](https://raw.githubusercontent.com/srad/PipeFlood/master/Doc/media/demo2_0.jpg)
-
-![](https://raw.githubusercontent.com/srad/PipeFlood/master/Doc/media/demo2_1.jpg)
-
-![](https://raw.githubusercontent.com/srad/PipeFlood/master/Doc/media/splash.jpg)
-
-![](https://raw.githubusercontent.com/srad/PipeFlood/master/Doc/media/demo1.jpg)
+![](https://raw.githubusercontent.com/srad/PipeFlood/master/Doc/media/demo6.jpg)
 
 # License
 

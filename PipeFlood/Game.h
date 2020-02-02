@@ -2,8 +2,8 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include "Game.h"
-#include "GameScreen.h"
-#include "StartScreen.h"
+#include "screens/GameScreen.h"
+#include "screens/StartScreen.h"
 #define DEBUG
 
 namespace PipeFlood {
@@ -21,7 +21,7 @@ namespace PipeFlood {
     sf::Clock clock;
   public:
     Game() :
-      gameInfo{ v2{64, 64}, v2{11, 10}, 1 },
+      gameInfo{ Vec2{64, 64}, Vec2{11, 10}, 1 },
       window{ sf::VideoMode(gameInfo.resolution.x, gameInfo.resolution.y), "StarBridge", sf::Style::Titlebar | sf::Style::Close },
       startScreen{ gameInfo, [this] { setScreen(&gameScreen); } },
       gameScreen{ gameInfo, [this] { } },

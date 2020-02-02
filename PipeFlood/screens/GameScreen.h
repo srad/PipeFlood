@@ -1,15 +1,14 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <iostream>
-#include "Map.h"
-#include "Tile.h"
+#include "../Map.h"
+#include "../resources/Tile.h"
 #include "Screen.h"
-#include "TilePack.h"
-#include "Animation.h"
+#include "../resources/TilePack.h"
+#include "../animations/Animation.h"
+#include "../GameTypes.h"
 
 namespace PipeFlood {
-  typedef std::vector<Sprite> Sprites;
-
   class GameScreen : public Screen {
   public:
     AnimationController<Sprite> controller;
@@ -17,7 +16,7 @@ namespace PipeFlood {
     Audio ok{ "ok.wav" };
     Font font{ "Hack-Bold.ttf" };
     TileMap selector{ "selector.png" };
-    TilePack tilePack{ 1 };
+    TilePack tilePack{ GameInfo::TilePack };
     Sprites mapSprites;
     Sprites connectors;
 
@@ -26,7 +25,7 @@ namespace PipeFlood {
 
   private:
     Map map;
-    v2 cursor = v2{ 0, 0 };
+    Vec2 cursor = Vec2{ 0, 0 };
     TraceInfo backtrace;
 
   public:
@@ -36,16 +35,16 @@ namespace PipeFlood {
 
     void create(sf::RenderWindow* window) override {
       // Map background
-      for (uint16_t y = 0; y < gameInfo.mapSize.y+2; y++) {
-        for (uint16_t x = 0; x < gameInfo.mapSize.x+2; x++) {
+      for (grid_t y = 0; y < gameInfo.mapSize.y+2; y++) {
+        for (grid_t x = 0; x < gameInfo.mapSize.x+2; x++) {
           float pixelX = (x + gameInfo.margin) * gameInfo.tileSize.x;
           float pixelY = (y + gameInfo.margin) * gameInfo.tileSize.y;
           mapSprites.push_back(*tilePack.spriteGrid(x, y, gameInfo.mapSize.x + 1, gameInfo.mapSize.y + 1, sf::Vector2f{ pixelX, pixelY }));
         }
       }
 
-      forMap([this](uint16_t x, uint16_t y, uint16_t lastX, uint16_t lastY, float pixelX, float pixelY) {
-        auto sprite = map.getSprite(v2{ (uint16_t)pixelX, (uint16_t)pixelY }, v2{ (uint16_t)x, (uint16_t)y }, false);
+      forMap([this](grid_t x, grid_t y, grid_t lastX, grid_t lastY, float pixelX, float pixelY) {
+        auto sprite = map.getSprite(Vec2{ pixelX, pixelY }, Vec2{ x, y }, false);
         connectors.push_back(sprite);
       });
 
@@ -54,17 +53,22 @@ namespace PipeFlood {
 
     void animate() {
       controller.clear();
-      forMap([this](uint16_t x, uint16_t y, uint16_t lastX, uint16_t lastY, float pixelX, float pixelY) {
+      forMap([this](grid_t x, grid_t y, grid_t lastX, grid_t lastY, float pixelX, float pixelY) {
         auto index = (gameInfo.mapSize.x * y) + x;
         if (map.joined[x][y]) {
           if (map.field[x][y] == TileType::Start) {
-            controller.push_back(std::make_unique<MoveAnimator>(connectors[index], v2{ 0, 4 }, 400));
+            controller.push_back(std::make_unique<MoveAnimator>(connectors[index], Vec2{ 0, 4 }, 400));
           }
           else if (map.field[x][y] == TileType::End) {
-            controller.push_back(std::make_unique<MoveAnimator>(connectors[index], v2{ 4, 0 }, 500));
+            controller.push_back(std::make_unique<MoveAnimator>(connectors[index], Vec2{ 4, 0 }, 500));
           }
         }
       });
+    }
+
+    ~GameScreen() {
+      mapSprites.clear();
+      connectors.clear();
     }
 
     void key(sf::RenderWindow* window, sf::Event* event, PipeFlood::InputInfo* input) override {
@@ -89,7 +93,9 @@ namespace PipeFlood {
       }
       cursor.x = pos.x / gameInfo.tileSize.x - margin;
       cursor.y = pos.y / gameInfo.tileSize.y - margin;
+#ifdef DEBUG
       std::cout << cursor.x << ", " << cursor.y << std::endl;
+#endif // DEBUG
       rotate(cursor);
       selector.sprite.setPosition(sf::Vector2f((float)((cursor.x + margin) * gameInfo.tileSize.x), (float)((cursor.y + margin) * gameInfo.tileSize.y)));
     }
@@ -102,7 +108,7 @@ namespace PipeFlood {
 
     void resize(sf::RenderWindow* window) override {};
 
-    void forMap(std::function<void(uint16_t, uint16_t, uint16_t, uint16_t, float, float)> callback) {
+    void forMap(std::function<void(grid_t, grid_t, grid_t, grid_t, float, float)> callback) {
       for (uint16_t y = 0; y < gameInfo.mapSize.y; y++) {
         for (uint16_t x = 0; x < gameInfo.mapSize.x; x++) {
           float pixelX = (x + gameInfo.margin + 1) * gameInfo.tileSize.x;
@@ -112,7 +118,7 @@ namespace PipeFlood {
       }
     }
 
-    void forScreen(std::function<void(uint16_t, uint16_t, uint16_t, uint16_t, float, float)> callback) {
+    void forScreen(std::function<void(grid_t, grid_t, grid_t, grid_t, float, float)> callback) {
       for (uint16_t y = 0; y < gameInfo.screenSize.y; y++) {
         for (uint16_t x = 0; x < gameInfo.screenSize.x; x++) {
           float pixelX = x * gameInfo.tileSize.x;
@@ -125,21 +131,21 @@ namespace PipeFlood {
     void draw(sf::RenderWindow* window, float delta) override {
       window->clear(sf::Color::Black);
 
-      forScreen([this, window](uint16_t x, uint16_t y, uint16_t lastX, uint16_t lastY, float pixelX, float pixelY) {
+      forScreen([this, window](grid_t x, grid_t y, grid_t lastX, grid_t lastY, float pixelX, float pixelY) {
         tilePack.bg.sprite.setPosition(sf::Vector2f(pixelX, pixelY));
         window->draw(tilePack.bg.sprite);
       });
 
-      for (uint16_t y = 0; y < (gameInfo.mapSize.y+2); y++) {
-        for (uint16_t x = 0; x < (gameInfo.mapSize.x+2); x++) {
+      for (grid_t y = 0; y < (gameInfo.mapSize.y+2); y++) {
+        for (grid_t x = 0; x < (gameInfo.mapSize.x+2); x++) {
           auto index = ((gameInfo.mapSize.x + 2) * y) + x;
           window->draw(mapSprites[index]);
         }
       }
 
-      forMap([this, window](uint16_t x, uint16_t y, uint16_t lastX, uint16_t lastY, float pixelX, float pixelY) {
+      forMap([this, window](grid_t x, grid_t y, grid_t lastX, grid_t lastY, float pixelX, float pixelY) {
         auto index = (gameInfo.mapSize.x * y) + x;
-        if (won && backtrace.visited[v2{ x, y }.str()]) {
+        if (won && backtrace.visited[Vec2{ x, y }.str()]) {
           connectors[index].setColor(sf::Color{ 200, 100, 100 });
         }
         window->draw(connectors[index]);
@@ -155,7 +161,7 @@ namespace PipeFlood {
     void close(sf::RenderWindow* window) override {}
 
   private:
-    void rotate(v2 pos) {
+    void rotate(Vec2 pos) {
       auto type = map.field[pos.x][pos.y];
       if (type == TileType::None || type == TileType::None2 || type == TileType::Void) {
         return;
@@ -171,18 +177,18 @@ namespace PipeFlood {
       map.printJoins();
 
       // Found connection
-      pathInfo = map.BFS(v2{ 0, 0 }, map.target);
+      pathInfo = map.BFS(Vec2{ 0, 0 }, map.target);
       if (!won && pathInfo.visited[map.target.str()]) {
-        backtrace = map.backTraceFrom(pathInfo, map.target, v2{ 0, 0 });
+        backtrace = map.backTraceFrom(pathInfo, map.target, Vec2{ 0, 0 });
         won = true;
       }
 
-      forMap([this](uint16_t x, uint16_t y, uint16_t lastX, uint16_t lastY, float pixelX, float pixelY) {
+      forMap([this](grid_t x, grid_t y, grid_t lastX, grid_t lastY, float pixelX, float pixelY) {
         auto index = (gameInfo.mapSize.x * y) + x;
-        connectors[index] = map.getSprite(v2{ (uint16_t)pixelX, (uint16_t)pixelY }, v2{ (uint16_t)x, (uint16_t)y }, pathInfo.visited[v2{ x,y }.str()]);
+        connectors[index] = map.getSprite(Vec2{ pixelX, pixelY }, Vec2{ x, y }, pathInfo.visited[Vec2{ x,y }.str()]);
       });
 
-      ok.play();
+      //ok.play();
 
       animate();
 

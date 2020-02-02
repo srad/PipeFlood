@@ -158,18 +158,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="PipeFlood.cpp" />
-    <ClCompile Include="Pipes.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Animation.h" />
+    <ClInclude Include="animations\Animation.h" />
     <ClInclude Include="Game.h" />
-    <ClInclude Include="GameScreen.h" />
     <ClInclude Include="GameTypes.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Map.h" />
-    <ClInclude Include="Screen.h" />
-    <ClInclude Include="StartScreen.h" />
-    <ClInclude Include="TilePack.h" />
+    <ClInclude Include="resources\Pipes.h" />
+    <ClInclude Include="resources\Tile.h" />
+    <ClInclude Include="resources\TilePack.h" />
+    <ClInclude Include="screens\GameScreen.h" />
+    <ClInclude Include="screens\Screen.h" />
+    <ClInclude Include="screens\StartScreen.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

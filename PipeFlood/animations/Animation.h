@@ -1,5 +1,5 @@
 #pragma once
-#include "GameTypes.h"
+#include "../GameTypes.h"
 #include <SFML\System\Clock.hpp>
 
 namespace PipeFlood {
@@ -22,11 +22,11 @@ namespace PipeFlood {
     sf::Clock animClock;
     enum class AnimState { Start, Up, Down };
     AnimState state = AnimState::Start;
-    v2 offset;
+    Vec2 offset;
     float milliseconds;
 
   public:
-    MoveAnimator(Sprite& sprite, v2 offset, Milliseconds milliseconds) : offset{ offset }, milliseconds{ milliseconds }, Animator{ sprite } {}
+    MoveAnimator(Sprite& sprite, Vec2 offset, Milliseconds milliseconds) : offset{ offset }, milliseconds{ milliseconds }, Animator{ sprite } {}
 
     void update(float delta) override {
       float moveY = 0;

@@ -48,7 +48,7 @@ namespace PipeFlood {
       return sprite;
     }
 
-    Sprite createSprite(v2 pos, v2 size, uint16_t rotation) {
+    Sprite createSprite(Vec2 pos, Vec2 size, rot_t rotation) {
       Sprite sprite;
 
       sprite.setTexture(tex);

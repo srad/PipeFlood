@@ -83,7 +83,7 @@ namespace PipeFlood {
   struct JoinsPack : public Pack {
     JoinsPack(uint16_t pack) : Pack{ pack } {}
 
-    Sprite toSprite(v2 pixelPos, uint16_t index, bool active, uint16_t rotation, v2 size = v2{ 64, 64 }) {
+    Sprite toSprite(Vec2 pixelPos, uint16_t index, bool active, uint16_t rotation, Vec2 size = Vec2{ 64, 64 }) {
       Sprite sprite = active
         ? connections[index].on.toSprite()
         : connections[index].off.toSprite();

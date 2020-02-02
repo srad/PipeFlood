@@ -1,5 +1,5 @@
 #pragma once
-#include "GameTypes.h"
+#include "../GameTypes.h"
 #include <SFML\Graphics\RenderWindow.hpp>
 #include <functional>
 

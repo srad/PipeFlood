@@ -1,50 +1,46 @@
 #pragma once
 #include "GameTypes.h"
-#include  "Pipes.h"
+#include  "resources/Pipes.h"
 #include "Math.h"
-#include "Tile.h"
-#include "TilePack.h"
+#include "resources/Tile.h"
+#include "resources/TilePack.h"
 #include <queue>
 
 namespace PipeFlood {
   struct Map {
-    v2 target;
+    Vec2 target;
 
     // Unjoined pipes are drawn darker
-    const float darkenColor = 0.6f;
+    const float darkenColor = 0.7f;
 
-    uint16_t** field;
-    uint16_t** rotation;
-    bool** joined;
-
+    Field field;
+    Rotations rotation;
+    BitField joined;
+    
     GameInfo gameInfo;
-    JoinsPack joinsPack{ 2 };
+    JoinsPack joinsPack{ GameInfo::PipePack };
 
-    Map(GameInfo gameInfo) : gameInfo{ gameInfo }, target{ (uint16_t)(gameInfo.mapSize.x - 1), (uint16_t)(gameInfo.mapSize.y - 1) } {
-      field = new uint16_t * [gameInfo.mapSize.x];
-      rotation = new uint16_t * [gameInfo.mapSize.x];
-      joined = new bool* [gameInfo.mapSize.x];
-
-      for (uint16_t x = 0; x < gameInfo.mapSize.x; x++) {
-        field[x] = new uint16_t[gameInfo.mapSize.y];
-        rotation[x] = new uint16_t[gameInfo.mapSize.y];
-        joined[x] = new bool[gameInfo.mapSize.y];
-      }
+    Map(GameInfo gameInfo) :
+      gameInfo{ gameInfo },
+      field(gameInfo.mapSize.x, std::vector<field_t>(gameInfo.mapSize.y, 0)),
+      rotation(gameInfo.mapSize.x, std::vector<rot_t>(gameInfo.mapSize.y, 0)),
+      joined(gameInfo.mapSize.x, std::vector<bool>(gameInfo.mapSize.y, false)),
+      target{ (grid_t)(gameInfo.mapSize.x - 1), (grid_t)(gameInfo.mapSize.y - 1) } {
 
       // Random map
-      for (uint16_t x = 0; x < gameInfo.mapSize.x; x++) {
-        for (uint16_t y = 0; y < gameInfo.mapSize.y; y++) {
+      for (grid_t x = 0; x < gameInfo.mapSize.x; x++) {
+        for (grid_t y = 0; y < gameInfo.mapSize.y; y++) {
           rotation[x][y] = 0;
-          // Input
+          // Start
           if (x == 0 && y == 0) { field[x][y] = 0; }
-          // Output
+          // End
           else if ((x == (gameInfo.mapSize.x - 1)) && (y == (gameInfo.mapSize.y - 1))) {
             field[x][y] = 1;
           }
-          // Pipes
+          // Random tiles
           else {
             auto r = Math::rnd(0, 100);
-            uint16_t type = TileType::None;
+            field_t type = TileType::None;
             if (r <= 5) { type = TileType::None; }
             else if (r <= 10) { type = TileType::Start; }
             else if (r <= 15) { type = TileType::End; }
@@ -72,15 +68,15 @@ namespace PipeFlood {
     }
 
     ~Map() {
-      delete[] field;
-      delete[] rotation;
-      delete[] joined;
+      field.clear();
+      rotation.clear();
+      joined.clear();
     }
 
     void checkJoins() {
-      for (uint16_t x = 0; x < gameInfo.mapSize.x; x++) {
-        for (uint16_t y = 0; y < gameInfo.mapSize.y; y++) {
-          joined[x][y] = doesJoin(v2{ x,y });
+      for (grid_t x = 0; x < gameInfo.mapSize.x; x++) {
+        for (grid_t y = 0; y < gameInfo.mapSize.y; y++) {
+          joined[x][y] = doesJoin(Vec2{ x,y });
         }
       }
     }
@@ -88,12 +84,12 @@ namespace PipeFlood {
     /*
      * Find out if this pipe connects to any adjacent pipe opening.
      */
-    bool doesJoin(const v2 pos) {
+    bool doesJoin(const Vec2 pos) {
       const auto& sides = Pipes::vPipeMask[field[pos.x][pos.y]][rotation[pos.x][pos.y]];
       return rightJoin(sides, pos) || leftJoin(sides, pos) || topJoin(sides, pos) || bottomJoin(sides, pos);
     }
 
-    bool leftJoin(const std::vector<bool>& sides, v2 pos) {
+    bool leftJoin(const std::vector<bool>& sides, Vec2 pos) {
       const auto& left = sides[Side::left];
 
       return (pos.x > 0)
@@ -101,7 +97,7 @@ namespace PipeFlood {
         && Pipes::vPipeMask[field[pos.x - 1][pos.y]][rotation[pos.x - 1][pos.y]][Side::right];
     }
 
-    bool rightJoin(const std::vector<bool>& sides, v2 pos) {
+    bool rightJoin(const std::vector<bool>& sides, Vec2 pos) {
       const auto& right = sides[Side::right];
 
       return (pos.x < (gameInfo.mapSize.x - 1))
@@ -109,7 +105,7 @@ namespace PipeFlood {
         && Pipes::vPipeMask[field[pos.x + 1][pos.y]][rotation[pos.x + 1][pos.y]][Side::left];
     }
 
-    bool topJoin(const std::vector<bool>& sides, v2 pos) {
+    bool topJoin(const std::vector<bool>& sides, Vec2 pos) {
       const auto& top = sides[Side::top];
 
       return (pos.y > 0)
@@ -117,7 +113,7 @@ namespace PipeFlood {
         && Pipes::vPipeMask[field[pos.x][pos.y - 1]][rotation[pos.x][pos.y - 1]][Side::bottom];
     }
 
-    bool bottomJoin(const std::vector<bool>& sides, v2 pos) {
+    bool bottomJoin(const std::vector<bool>& sides, Vec2 pos) {
       const auto& bottom = sides[Side::bottom];
 
       return (pos.y < gameInfo.mapSize.y - 1)
@@ -136,7 +132,7 @@ namespace PipeFlood {
 #endif
     }
 
-    Sprite getSprite(v2 pixelPos, v2 pos, bool active = false) {
+    Sprite getSprite(Vec2 pixelPos, Vec2 pos, bool active = false) {
       Sprite sprite = joinsPack.toSprite(pixelPos, field[pos.x][pos.y], active, rotation[pos.x][pos.y]);
       if (!joined[pos.x][pos.y] && !active) {
         auto col = sprite.getColor();
@@ -145,7 +141,7 @@ namespace PipeFlood {
       return sprite;
     }
     
-    TraceInfo backTraceFrom(PathInfo& pathInfo, v2 from, v2 to) {
+    TraceInfo backTraceFrom(PathInfo& pathInfo, Vec2 from, Vec2 to) {
       TraceInfo trace;
       trace.add(from);
 
@@ -160,7 +156,7 @@ namespace PipeFlood {
       return trace;
     }
 
-    PathInfo BFS(v2 start, v2 goal, std::queue<v2> queue = std::queue<v2>{}, PathInfo pathInfo = PathInfo{}) {
+    PathInfo BFS(Vec2 start, Vec2 goal, std::queue<Vec2> queue = std::queue<Vec2>{}, PathInfo pathInfo = PathInfo{}) {
       queue.push(start);
 
       while (!queue.empty()) {
@@ -175,10 +171,10 @@ namespace PipeFlood {
         // insert all adjacent points
         if (joined[v.x][v.y]) {
           const auto& sides = Pipes::vPipeMask[field[v.x][v.y]][rotation[v.x][v.y]];
-          auto left = v2{ (uint16_t)(v.x - 1), v.y };
-          auto right = v2{ (uint16_t)(v.x + 1), v.y };
-          auto top = v2{ v.x, (uint16_t)(v.y - 1) };
-          auto bottom = v2{ v.x, (uint16_t)(v.y + 1) };
+          auto left = Vec2{ (grid_t)(v.x - 1), v.y };
+          auto right = Vec2{ (grid_t)(v.x + 1), v.y };
+          auto top = Vec2{ v.x, (grid_t)(v.y - 1) };
+          auto bottom = Vec2{ v.x, (grid_t)(v.y + 1) };
 
           if (!pathInfo.visited[left.str()] && leftJoin(sides, v)) {
             pathInfo.visited[left.str()] = true;
