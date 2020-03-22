@@ -1,4 +1,4 @@
-# PipeFlood
+# StarPipe
 2d puzzle game based on Visual C++ 2019 and SFML 2.x
 
 # Installation
